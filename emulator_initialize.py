@@ -1,11 +1,9 @@
 import os
 import requests
 import zipfile
-import subprocess
 from pynput.keyboard import Controller, Key
 import time
-from PIL import Image
-import socket
+
 
 FILENAME = "snes9x-1.51-rerecording-v7.1-win32.zip"
 DOWNLOAD_URL = "https://github.com/TASEmulators/snes9x-rr/releases/download/snes9x-151-v7.1/snes9x-1.51-rerecording-v7.1-win32.zip"
@@ -19,12 +17,8 @@ SNES9X_EXE = os.path.join(EXTRACT_PATH, "snes9x.exe")
 ROM_PATH = os.path.join(SCRIPT_DIR, "snes9x/Roms/smw.sfc")
 LUA_SCRIPT = os.path.join(SCRIPT_DIR, "bot.lua")
 ROMS_FOLDER = os.path.join(EXTRACT_PATH, "Roms")
-NUM_FRAMES = 5
-CONFIG_PATH = "snes9x.cfg"
 COLOR_IMAGE_PATH = "snes9x/Screenshots/smw000.png"
 keyboard = Controller()
-HOST = "127.0.0.1"
-PORT = 65432
 
 def main():
     # Check for emulator executable and install if not available
@@ -33,114 +27,8 @@ def main():
     create_roms_folder()
     create_screenshots_folder()
     create_saves_folder()
-    start_snes9x()
-
-    # Wait for emulator to load
-    # Uncomment the following line to load the save state if one exists
-    time.sleep(6)
-    #button_short_press(Key.f1)
-
-    # Create a starting screenshot to overwrite each advance
-    button_short_press(Key.f12)
-    
-    # Open the client python script in a subprocess. This is where the AI code should be
-    subprocess.Popen(["python", "client.py"])
-
-    # Create a TCP socket
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.bind((HOST, PORT))
-    server_socket.listen(1)
-
-    print(f"Listening for connections on {HOST}:{PORT}...")
-    conn, addr = server_socket.accept()
-    print(f"Connected by {addr}")
-
-    # Execute advance frames to put emulator in frame advance mode
-    button_short_press("\\")
-    button_short_press(Key.ctrl_r)
-
-    print("Press right ctrl key to advance frames...")
-    while True:
-        try:
-            while True:
-                data = conn.recv(1024).decode().strip()
-                if not data:
-                    break
-                print(f"Received input: {data}")
-
-                # Set flag if "delete" command is received
-                if data == "Key.ctrl_r":
-                    print("Advance message received, advancing frames now...")
-                    # Check if the file exists before deleting it
-                    if os.path.exists(COLOR_IMAGE_PATH):
-                        os.remove(COLOR_IMAGE_PATH)
-
-                    # Advance n frames
-                    for _ in range(NUM_FRAMES):
-                        button_short_press("\\")
-
-                    # Save the current screenshot to Screenshots folder & convert to grayscale
-                    button_short_press(Key.f12)
-                    time.sleep(1)
-                    convert_grayscale()
-
-        except KeyboardInterrupt:
-                print("Server shutting down.")
-                conn.close()
-                server_socket.close()
-                return
-
-def convert_grayscale():
-    # Ensure the color image exists before processing
-    if not os.path.exists(COLOR_IMAGE_PATH):
-        print(f"Warning: Color image not found at {COLOR_IMAGE_PATH}")
-        return
-
-    # Load the original image
-    image = Image.open(COLOR_IMAGE_PATH)
-
-    # Convert to grayscale
-    gray_image = image.convert("L")
-
-    # Overwrite the original file with the grayscale version
-    gray_image.save(COLOR_IMAGE_PATH)  # Saves over the color image
-
-    print(f"Replaced {COLOR_IMAGE_PATH} with its grayscale version")
-
-
-def button_short_press(button):
-    keyboard.press(button)
-    time.sleep(0.05)
-    keyboard.release(button)
-
-def button_timed_press(button, duration):
-    keyboard.press(button)
-    time.sleep(duration)
-    keyboard.release(button)
-
-def button_hold(button):
-    keyboard.press(button)
-
-def button_release(button):
-    keyboard.release(button)
-
-def start_snes9x():
-    """Launch SNES9x with a ROM and a Lua script."""
-    
-    if not os.path.exists(ROMS_FOLDER):
-        os.makedirs(ROMS_FOLDER)
-        print(f"'Roms' folder created at: {ROMS_FOLDER}")
-
-    while not os.path.isfile(ROM_PATH):
-        print(f"ROM file is missing. Please place 'smw.sfc' in {ROMS_FOLDER}.")
-        input("Press Enter after adding the ROM file...")
-
-    if not os.path.isfile(LUA_SCRIPT):
-        print(f"Warning: Lua script '{LUA_SCRIPT}' not found. Running without it.")
-        subprocess.Popen([SNES9X_EXE, ROM_PATH], cwd=EXTRACT_PATH)
-    else:
-        print(f"Launching SNES9x with ROM: {ROM_PATH} and Lua script: {LUA_SCRIPT}")
-        subprocess.Popen([SNES9X_EXE, "-lua", LUA_SCRIPT, ROM_PATH], cwd=EXTRACT_PATH)
+    if not os.path.isfile(ROM_PATH):
+        print(f"ROM file is missing. Rerun after placing 'smw.sfc' in {ROMS_FOLDER}.")
 
 def create_roms_folder():
     """Create a 'Roms' folder inside the SNES9x extracted directory if it doesn't exist."""
@@ -151,7 +39,7 @@ def create_roms_folder():
         print(f"'Roms' folder created at: {roms_path}")
     else:
         print(f"'Roms' folder already exists at: {roms_path}")
-
+        
     return roms_path
 
 def create_saves_folder():
