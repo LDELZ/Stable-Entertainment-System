@@ -1,9 +1,6 @@
 import os
 import requests
 import zipfile
-from pynput.keyboard import Controller, Key
-import time
-
 
 FILENAME = "snes9x-1.51-rerecording-v7.1-win32.zip"
 DOWNLOAD_URL = "https://github.com/TASEmulators/snes9x-rr/releases/download/snes9x-151-v7.1/snes9x-1.51-rerecording-v7.1-win32.zip"
@@ -18,7 +15,6 @@ ROM_PATH = os.path.join(SCRIPT_DIR, "snes9x/Roms/smw.sfc")
 LUA_SCRIPT = os.path.join(SCRIPT_DIR, "bot.lua")
 ROMS_FOLDER = os.path.join(EXTRACT_PATH, "Roms")
 COLOR_IMAGE_PATH = "snes9x/Screenshots/smw000.png"
-keyboard = Controller()
 
 def main():
     # Check for emulator executable and install if not available
@@ -29,6 +25,8 @@ def main():
     create_saves_folder()
     if not os.path.isfile(ROM_PATH):
         print(f"ROM file is missing. Rerun after placing 'smw.sfc' in {ROMS_FOLDER}.")
+    else:
+        print("Emulator initialized!")
 
 def create_roms_folder():
     """Create a 'Roms' folder inside the SNES9x extracted directory if it doesn't exist."""
