@@ -2,8 +2,7 @@ import os
 from pynput.keyboard import Controller, Key
 import time
 import subprocess
-from PIL import Image
-import keyboard
+from PIL import Image, ImageGrab
 import numpy as np
 import pygetwindow as gw
 import win32gui
@@ -21,6 +20,7 @@ ROM_PATH = os.path.abspath(os.path.join(SCRIPT_DIR, "../../snes9x/Roms/smw.sfc")
 SCREENSHOTS_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "../../snes9x/Screenshots"))
 SCREENSHOTS_PATH = os.path.abspath(os.path.join(SCRIPT_DIR, "../../snes9x/Screenshots/smw000.png"))
 SAVESTATE_PATH = os.path.abspath(os.path.join(SCRIPT_DIR, "../../snes9x/Saves/smw.000"))
+WINDOW_TITLE = "Snes9x rerecording 1.51 v7.1"
 
 KEYMAP = {
     'A': 'v',
@@ -43,6 +43,8 @@ class SNES9x(WrapperInterface):
         self.keyboard = Controller()
         self.process = None
         self.n = 5
+        self.keymapping = KEYMAP
+        self.held_keys = set()
 
     def pressButton(self, button):
         key = KEYMAP.get(button, button)
@@ -121,27 +123,21 @@ class SNES9x(WrapperInterface):
 
         # Enter frame-advance mode
         self.pressButton("\\")
-
-        while True:
-            self.advance(self.n)
-            self.screenshot()
+        self.is_ready = True
             
-
     def sendButtons(self, key_list:list[str]):
         """
         Sends the buttons to the emulator. Any button not pushed should be released
         """
-        print(f"Sending buttons {key_list}")
+        active = set(key_list)
 
-        '''
-        THIS IS MY OLD FUNCTION; I WILL BE WORKING THIS FUNCTIONALITY INTO THIS NEW FUNCTION SOON
-        for key in inputs:
-            mapped_key = KEYMAP[key]
-            print(f"Pressing: {mapped_key}")
-
-            # Press and release the key
-            KEYBOARD.press(mapped_key)'
-        '''
+        for logical_btn, physical_key in self.keymapping.items():
+            if logical_btn in active and physical_key not in self.held_keys:
+                self.keyboard.press(physical_key)
+                self.held_keys.add(physical_key)
+            elif logical_btn not in active and physical_key in self.held_keys:
+                self.keyboard.release(physical_key)
+                self.held_keys.remove(physical_key)
 
     def releaseAllButtons(self):
         self.sendButtons([])
@@ -159,9 +155,7 @@ class SNES9x(WrapperInterface):
         """
         Make the emulator load some system state called state_name
         """
-        self.keyboard.press(Key.f1)
-        time.sleep(0.1)
-        self.keyboard.release(Key.f1)
+        self.pressButton(Key.f1)
         print(f"Loading save state {state_name}...")
 
     def saveState(self, state_name:str):
@@ -175,28 +169,23 @@ class SNES9x(WrapperInterface):
         self.keyboard.release(Key.shift)
         print(f"Saving state to {state_name}...")
 
-    def screenshot(self) -> np.array:
+    def screenshot(self) -> np.ndarray:
         """
-        Take a screenshot. (Convert to grayscale)
+        Take a screenshot. (Convert to grayscale) and return as an np.array
         """
-        self.pressButton(Key.f12)
-        time.sleep(1)
+        windows = gw.getWindowsWithTitle(WINDOW_TITLE)
+        if not windows:
+            raise RuntimeError(f"No window found with title containing '{WINDOW_TITLE}'")
 
-        if not os.path.exists(SCREENSHOTS_PATH):
-            raise FileNotFoundError(f"Screenshot not found at: {SCREENSHOTS_PATH}")
+        win = windows[0]
+        if win.isMinimized:
+            win.restore()
+        win.activate()
+        time.sleep(0.5)
 
-        # Open and convert to grayscale
-        img_color = Image.open(SCREENSHOTS_PATH)
-        img_gray = img_color.convert("L")
-
-        # Save grayscale image (overwrites the original)
-        img_gray.save(SCREENSHOTS_PATH)
-        print(f"Saved {SCREENSHOTS_PATH} in grayscale mode.")
-
-        # Remove the file afterward
-        os.remove(SCREENSHOTS_PATH)
-        #print(f"Returning all 0's to caller. Please replace!")
-        #return np.zeros(shape=(*GAME_RESOLUTION, 1))
+        bbox = (win.left, win.top, win.right, win.bottom)
+        img_gray = ImageGrab.grab(bbox=bbox).convert("L")
+        return np.array(img_gray)
 
     def read16(self, address:int) -> np.int16:
         print(f"Reading 16 bits from address {hex(address)}")
@@ -205,5 +194,3 @@ class SNES9x(WrapperInterface):
     def read8(self, address:int) -> np.int8:
         print(f"Reading 8 bits from address {hex(address)}")
         return np.int8(0)
-    
-
