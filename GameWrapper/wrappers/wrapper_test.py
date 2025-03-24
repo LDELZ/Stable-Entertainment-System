@@ -2,14 +2,13 @@ import os
 import sys
 from PIL import Image
 import numpy as np
-import time
-import socket
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
 from SNES9x import SNES9x
 
 def main():
     emulator = SNES9x()
+    emulator.launchEmulator()
     emulator.startGame()
 
     input_sequence = [
@@ -36,16 +35,10 @@ def main():
 
     for i, inputs in enumerate(input_sequence):
         print(f"Frame {i + 1}: Sending {inputs}")
-
         emulator.sendButtons(inputs)
         emulator.advance(emulator.n)
         emulator.releaseAllButtons()
         frame = emulator.screenshot()
-
-        value = emulator.read_ram16(0x7E0010)
-        print("16-bit value from Lua:", value)
-
-        time.sleep(3)
 
 def test_save_screenshot(np_array: np.ndarray, filename: str = "screenshot_debug.png") -> None:
     '''

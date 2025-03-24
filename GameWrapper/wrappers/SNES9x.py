@@ -9,7 +9,8 @@ import win32gui
 import win32con
 from GameWrapper.wrappers.WrapperInterface import WrapperInterface
 import socket
-import pyautogui
+import threading
+import sys
 
 # Set the current directory as the script execution directory
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -76,25 +77,13 @@ class SNES9x(WrapperInterface):
             print("SNES9x window not found.")
     
     def launchEmulator(self):
-        """
-        Starts emulator (Does not launch the game)
-        """
-        if not os.path.exists(SNES9X_EXE):
-            raise RuntimeError("Please run emulator_initialize.py before using this wrapper!")
+        parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 
-        try:
-            self.process = subprocess.Popen([SNES9X_EXE])
-            self.is_ready = True
-            print("SNES9x launched.")
-        except Exception as e:
-            raise RuntimeError(f"Failed to launch SNES9x: {e}")
+        # Path to emulator_initialize.py
+        init_script = os.path.join(parent_dir, "emulator_initialize.py")
 
-        time.sleep(1)
-        if self.process and self.process.poll() is None:
-            print("Closing SNES9x emulator...")
-            self.process.terminate()
-            self.process.wait()
-            self.is_ready = False
+        # Run it with the same Python interpreter
+        subprocess.run([sys.executable, init_script], check=True)
 
     def startGame(self):
         """
@@ -123,10 +112,9 @@ class SNES9x(WrapperInterface):
         self.pressButton('2')
 
         self.connect_lua_socket()
-
-        # Take first screenshot
-        self.pressButton(Key.f12)
-
+        # Start RAM listener in background
+        threading.Thread(target=self.listen_for_ram_data, daemon=True).start()
+        
         if not os.path.exists(SAVESTATE_PATH):
             print("No savestate found! Creating new Level 1 savestate.")
             # Get the level 1 savestate
@@ -134,7 +122,9 @@ class SNES9x(WrapperInterface):
             for _ in range(4):
                 self.pressButton(Key.space)
                 time.sleep(0.5)
-            time.sleep(2)
+            time.sleep(15)
+            self.pressButton(Key.space)
+            time.sleep(3)
             self.pressButton(Key.left)
             time.sleep(2)
             self.pressButton('A')
@@ -143,6 +133,11 @@ class SNES9x(WrapperInterface):
         else:
             print("Savestate found! Loading current savestate")
             self.loadState("smw.000")
+
+        # Start Movie
+        self.pressButton("m")
+        time.sleep(0.5)
+        self.pressButton(Key.enter)
 
         # Enter frame-advance mode
         self.pressButton("\\")
@@ -209,6 +204,37 @@ class SNES9x(WrapperInterface):
         img_gray = ImageGrab.grab(bbox=bbox).convert("L")
         return np.array(img_gray)
     
+
+    def listen_for_ram_data(self):
+        while True:
+            try:
+                data = self.conn.recv(1024)
+                if not data:
+                    break
+                decoded = data.decode().strip()
+
+                # Split into key=value parts
+                parts = decoded.split(',')
+
+                frame = None
+                ram_parts = []
+
+                for part in parts:
+                    if part.startswith("Frame="):
+                        frame = int(part.split("=")[1])
+                    else:
+                        ram_parts.append(part)  # already in addr=value format
+
+                if frame is not None:
+                    ram_string = ", ".join(ram_parts)
+                    print(f"Frame {frame} | {ram_string}")
+                else:
+                    print("Frame number not found in message.")
+
+            except Exception as e:
+                print(f"[ERROR] Failed to parse RAM data: {e}")
+                break
+
     def read_ram16(self, address):
         if not self.conn:
             raise RuntimeError("Lua socket not connected")
