@@ -2,13 +2,14 @@ import os
 from pynput.keyboard import Controller, Key
 import time
 import subprocess
-from PIL import Image, ImageGrab
+from PIL import ImageGrab
 import numpy as np
 import pygetwindow as gw
 import win32gui
 import win32con
-from GameWrapper.wrappers.WrapperInterface import WrapperInterface, GAME_RESOLUTION
-from GameWrapper.button.Buttons import BUTTONS
+from GameWrapper.wrappers.WrapperInterface import WrapperInterface
+import socket
+import pyautogui
 
 # Set the current directory as the script execution directory
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -20,7 +21,10 @@ ROM_PATH = os.path.abspath(os.path.join(SCRIPT_DIR, "../../snes9x/Roms/smw.sfc")
 SCREENSHOTS_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "../../snes9x/Screenshots"))
 SCREENSHOTS_PATH = os.path.abspath(os.path.join(SCRIPT_DIR, "../../snes9x/Screenshots/smw000.png"))
 SAVESTATE_PATH = os.path.abspath(os.path.join(SCRIPT_DIR, "../../snes9x/Saves/smw.000"))
+LUASCRIPT_PATH = os.path.abspath(os.path.join(SCRIPT_DIR, "../../memory_server.lua"))
 WINDOW_TITLE = "Snes9x rerecording 1.51 v7.1"
+HOST = '127.0.0.1'
+PORT = 12345
 
 KEYMAP = {
     'A': 'v',
@@ -51,7 +55,26 @@ class SNES9x(WrapperInterface):
         self.keyboard.press(key)
         time.sleep(0.1)
         self.keyboard.release(key)
-        
+    
+    def connect_lua_socket(self, host=HOST, port=PORT):
+        """Starts a TCP server and waits for a Lua socket connection"""
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.bind((host, port))
+        s.listen()
+        print(f"[Socket] Listening on {host}:{port}...")
+
+        conn, addr = s.accept()
+        print(f"[Socket] Connected by {addr}")
+        self.conn = conn
+
+    def focus_snes9x(self):
+            for window in gw.getWindowsWithTitle("snes9x"):
+                win32gui.ShowWindow(window._hWnd, win32con.SW_RESTORE)
+                win32gui.SetForegroundWindow(window._hWnd)
+                print("SNES9x window focused.")
+                return
+            print("SNES9x window not found.")
+    
     def launchEmulator(self):
         """
         Starts emulator (Does not launch the game)
@@ -78,7 +101,7 @@ class SNES9x(WrapperInterface):
         Navigates the emulator to load the game and take the initial savestate. Sets up any lua scripts
         """
         print("Starting Game!")
-
+        
         # Ensure the ROM file still exists in the Roms folder
         if not os.path.exists(ROM_PATH):
             raise FileNotFoundError(f"ROM not found at: {ROM_PATH}")
@@ -90,16 +113,16 @@ class SNES9x(WrapperInterface):
 
         # Open the emulator with the SMW ROM
         subprocess.Popen([SNES9X_EXE, ROM_PATH])
+        time.sleep(1)
+        self.focus_snes9x()
+        self.pressButton(Key.backspace)
+        self.focus_snes9x()
 
-        # Bring the SNES9x window to the foreground so it can receive keyboard input
-        for window in gw.getWindowsWithTitle('snes9x'):
-                win32gui.ShowWindow(window._hWnd, win32con.SW_RESTORE)
-                win32gui.SetForegroundWindow(window._hWnd)
-                print("SNES9x window focused.")
-        
         #Remove the background layer
         time.sleep(1)
         self.pressButton('2')
+
+        self.connect_lua_socket()
 
         # Take first screenshot
         self.pressButton(Key.f12)
@@ -146,8 +169,7 @@ class SNES9x(WrapperInterface):
         """
         Advances the emulator by n frames
         """
-        print(f"Advancing by 1 + {n-1} frames!")
-        time.sleep(1)
+        time.sleep(0.1)
         for _ in range(n):
             self.pressButton("\\")
 
@@ -186,10 +208,20 @@ class SNES9x(WrapperInterface):
         bbox = (win.left, win.top, win.right, win.bottom)
         img_gray = ImageGrab.grab(bbox=bbox).convert("L")
         return np.array(img_gray)
+    
+    def read_ram16(self, address):
+        if not self.conn:
+            raise RuntimeError("Lua socket not connected")
 
-    def read16(self, address:int) -> np.int16:
-        print(f"Reading 16 bits from address {hex(address)}")
-        return np.int16(0)
+        self.conn.sendall(f'READ16,{hex(address)}\n'.encode())
+        self.advance(1)  # ← let Lua have a chance to run
+        response = self.conn.recv(1024).decode().strip()
+
+        if response.startswith("VALUE"):
+            return int(response.split(",")[1])
+        return None
+
+
 
     def read8(self, address:int) -> np.int8:
         print(f"Reading 8 bits from address {hex(address)}")
