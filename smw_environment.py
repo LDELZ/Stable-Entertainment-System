@@ -4,13 +4,13 @@ import gymnasium as gym
 import numpy as np
 from gymnasium import spaces
 from gymnasium.core import ObsType, ActType
-from GameWrapper.wrappers.WrapperInterface import WrapperInterface, GAME_RESOLUTION
+from GameWrapper.wrappers.WrapperInterface import *
 from GameWrapper.button.Buttons import BUTTONS
 
 class SmwEnvironment(gym.Env):
     def __init__(self, wrapper:WrapperInterface, frame_skip:int=4):
         self.game_wrapper = wrapper
-        self.observation_space = spaces.Box(0, 255, (*GAME_RESOLUTION, 1), np.uint8)
+        self.observation_space = spaces.Box(0, 255, (*GAME_RESOLUTION,), np.uint8)
         self.action_space = spaces.Box(0, 1, (len(BUTTONS),), np.uint8)
         self.frame_skip = frame_skip
 
@@ -21,10 +21,13 @@ class SmwEnvironment(gym.Env):
         self, action: ActType
     ) -> tuple[ObsType, SupportsFloat, bool, bool, dict[str, Any]]:
         #Code for rewards go here
-
         obs = self._get_obs()
-        terminate = False
+        terminate = self.game_wrapper.read8(ANIM_TRIGGER_STATE) == 9
+        if terminate:
+            print("Mario died!")
         reward = 0
+
+        print(f"Mario is at ({self.game_wrapper.read16(X_ADDR)}, {self.game_wrapper.read16(Y_ADDR)})")
 
         buttons_to_send = [button for idx,button in enumerate(BUTTONS) if action[idx] == 1]
 

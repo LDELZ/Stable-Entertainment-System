@@ -43,19 +43,24 @@ KEYMAP = {
 }
 
 class SNES9x(WrapperInterface):
-    def __init__(self):
+    def __init__(self, disable_keys:bool = False):
+        super().__init__()
+        self.disable_keys = disable_keys
         self.is_ready = False
         self.keyboard = Controller()
         self.process = None
         self.n = 5
         self.keymapping = KEYMAP
         self.held_keys = set()
+        self.ram_map:dict[int:int] = {}
+        self.ram_mutex = threading.Lock()
 
     def pressButton(self, button):
-        key = KEYMAP.get(button, button)
-        self.keyboard.press(key)
-        time.sleep(0.1)
-        self.keyboard.release(key)
+        if not self.disable_keys:
+            key = KEYMAP.get(button, button)
+            self.keyboard.press(key)
+            time.sleep(0.1)
+            self.keyboard.release(key)
     
     def connect_lua_socket(self, host=HOST, port=PORT):
         """Starts a TCP server and waits for a Lua socket connection"""
@@ -90,7 +95,10 @@ class SNES9x(WrapperInterface):
         Navigates the emulator to load the game and take the initial savestate. Sets up any lua scripts
         """
         print("Starting Game!")
-        
+        #TEMP enable keypresses
+        save_disable = self.disable_keys
+        self.disable_keys = False
+
         # Ensure the ROM file still exists in the Roms folder
         if not os.path.exists(ROM_PATH):
             raise FileNotFoundError(f"ROM not found at: {ROM_PATH}")
@@ -142,11 +150,14 @@ class SNES9x(WrapperInterface):
         # Enter frame-advance mode
         self.pressButton("\\")
         self.is_ready = True
-            
+        self.disable_keys = save_disable
+
     def sendButtons(self, key_list:list[str]):
         """
         Sends the buttons to the emulator. Any button not pushed should be released
         """
+        if self.disable_keys:
+            return
         active = set(key_list)
 
         for logical_btn, physical_key in self.keymapping.items():
@@ -167,6 +178,7 @@ class SNES9x(WrapperInterface):
         time.sleep(0.1)
         for _ in range(n):
             self.pressButton("\\")
+
 
     def loadState(self, state_name:str):
         """
@@ -194,11 +206,9 @@ class SNES9x(WrapperInterface):
         if not windows:
             raise RuntimeError(f"No window found with title containing '{WINDOW_TITLE}'")
 
+        self.refocus_game()
+
         win = windows[0]
-        if win.isMinimized:
-            win.restore()
-        win.activate()
-        time.sleep(0.5)
 
         bbox = (win.left, win.top, win.right, win.bottom)
         img_gray = ImageGrab.grab(bbox=bbox).convert("L")
@@ -208,16 +218,18 @@ class SNES9x(WrapperInterface):
     def listen_for_ram_data(self):
         while True:
             try:
+                self.conn.send("Ok\n".encode())
                 data = self.conn.recv(1024)
                 if not data:
                     break
                 decoded = data.decode().strip()
-
                 # Split into key=value parts
                 parts = decoded.split(',')
 
                 frame = None
                 ram_parts = []
+
+                # Lock the ram mutex
 
                 for part in parts:
                     if part.startswith("Frame="):
@@ -225,30 +237,42 @@ class SNES9x(WrapperInterface):
                     else:
                         ram_parts.append(part)  # already in addr=value format
 
-                if frame is not None:
-                    ram_string = ", ".join(ram_parts)
-                    print(f"Frame {frame} | {ram_string}")
-                else:
-                    print("Frame number not found in message.")
+                with self.ram_mutex:
+                    self.ram_map.clear()
+                    for rampart in ram_parts:
+                        eq_sign = rampart.find("=")
+                        addr = rampart[0:eq_sign]
+                        val = rampart[eq_sign+1:]
+                        self.ram_map[int(addr, 16)] = int(val, 10)
+
 
             except Exception as e:
                 print(f"[ERROR] Failed to parse RAM data: {e}")
-                break
+                #break
 
-    def read_ram16(self, address):
-        if not self.conn:
-            raise RuntimeError("Lua socket not connected")
+    def read16(self, address):
+        #Read the upper and lower bytes
+        lower = self.read8(address)
+        upper = self.read8(address + 1)
+        return np.uint16((upper << 8) | lower)
+        #Aquire the ram_map lock
 
-        self.conn.sendall(f'READ16,{hex(address)}\n'.encode())
-        self.advance(1)  # ← let Lua have a chance to run
-        response = self.conn.recv(1024).decode().strip()
+    def read8(self, address: int) -> np.int8:
+        with self.ram_mutex:
+            if(address in self.ram_map.keys()):
+                return np.uint8(self.ram_map[address])
+            else:
+                raise RuntimeError(f"Address {address:x} is not in the ram map!")
 
-        if response.startswith("VALUE"):
-            return int(response.split(",")[1])
-        return None
+    def refocus_game(self):
+        if self.disable_keys:
+            return
+        windows = gw.getWindowsWithTitle(WINDOW_TITLE)
+        if not windows:
+            raise RuntimeError(f"No window found with title containing '{WINDOW_TITLE}'")
+        win = windows[0]
+        if win.isMinimized:
+            win.restore()
+        win.activate()
+        time.sleep(0.5)
 
-
-
-    def read8(self, address:int) -> np.int8:
-        print(f"Reading 8 bits from address {hex(address)}")
-        return np.int8(0)
