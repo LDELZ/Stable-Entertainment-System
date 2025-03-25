@@ -4,3 +4,11 @@ venv
 .idea
 snes9x
 *.sfc
+*.srm
+*.cfg
+stderr.txt
+stdout.txt
+*.000
+*.png
+*.smv
+*.exe
