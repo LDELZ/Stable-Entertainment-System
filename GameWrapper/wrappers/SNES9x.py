@@ -59,7 +59,10 @@ class SNES9x(WrapperInterface):
         if not self.disable_keys:
             key = KEYMAP.get(button, button)
             self.keyboard.press(key)
-            time.sleep(0.1)
+            if self.is_ready:
+                time.sleep(0.1)
+            else:
+                time.sleep(0.001)
             self.keyboard.release(key)
     
     def connect_lua_socket(self, host=HOST, port=PORT):
@@ -110,9 +113,11 @@ class SNES9x(WrapperInterface):
 
         # Open the emulator with the SMW ROM
         subprocess.Popen([SNES9X_EXE, ROM_PATH])
-        time.sleep(1)
+        time.sleep(5)
         self.focus_snes9x()
+        time.sleep(5)
         self.pressButton(Key.backspace)
+        time.sleep(5)
         self.focus_snes9x()
 
         #Remove the background layer
@@ -175,7 +180,6 @@ class SNES9x(WrapperInterface):
         """
         Advances the emulator by n frames
         """
-        time.sleep(0.1)
         for _ in range(n):
             self.pressButton("\\")
 
@@ -262,7 +266,8 @@ class SNES9x(WrapperInterface):
             if(address in self.ram_map.keys()):
                 return np.uint8(self.ram_map[address])
             else:
-                raise RuntimeError(f"Address {address:x} is not in the ram map!")
+                print(f"Address {address:x} is not in the ram map!")
+                return np.uint(0)
 
     def refocus_game(self):
         if self.disable_keys:

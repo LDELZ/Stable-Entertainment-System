@@ -33,7 +33,7 @@ def main():
         ["RIGHT"]
     ]
 
-    for i, inputs in enumerate(input_sequence):
+    for i, inputs in enumerate(input_sequence * 1000):
         print(f"Frame {i + 1}: Sending {inputs}")
         emulator.sendButtons(inputs)
         emulator.advance(emulator.n)
