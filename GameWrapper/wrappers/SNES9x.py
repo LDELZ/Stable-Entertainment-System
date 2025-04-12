@@ -2,7 +2,7 @@ import os
 from pynput.keyboard import Controller, Key
 import time
 import subprocess
-from PIL import ImageGrab
+from PIL import Image, ImageGrab
 import numpy as np
 import pygetwindow as gw
 import win32gui
@@ -11,6 +11,7 @@ from GameWrapper.wrappers.WrapperInterface import WrapperInterface
 import socket
 import threading
 import sys
+import pygetwindow as gw
 
 # Set the current directory as the script execution directory
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -22,7 +23,7 @@ ROM_PATH = os.path.abspath(os.path.join(SCRIPT_DIR, "../../snes9x/Roms/smw_patch
 SCREENSHOTS_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "../../snes9x/Screenshots"))
 SCREENSHOTS_PATH = os.path.abspath(os.path.join(SCRIPT_DIR, "../../snes9x/Screenshots/smw000.png"))
 SAVESTATE_PATH = os.path.abspath(os.path.join(SCRIPT_DIR, "../../snes9x/Saves/smw_patched.000"))
-LUASCRIPT_PATH = os.path.abspath(os.path.join(SCRIPT_DIR, "../../memory_server.lua"))
+LUASCRIPT_PATH = os.path.abspath(os.path.join(SCRIPT_DIR, "../../lua_server.lua"))
 WINDOW_TITLE = "Snes9x rerecording 1.51 v7.1"
 HOST = '127.0.0.1'
 PORT = 12345
@@ -83,11 +84,7 @@ class SNES9x(WrapperInterface):
     
     def launchEmulator(self):
         parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
-
-        # Path to emulator_initialize.py
         init_script = os.path.join(parent_dir, "emulator_initialize.py")
-
-        # Run it with the same Python interpreter
         subprocess.run([sys.executable, init_script], check=True)
 
     def startGame(self):
@@ -112,17 +109,10 @@ class SNES9x(WrapperInterface):
         subprocess.Popen([SNES9X_EXE, ROM_PATH])
         time.sleep(1)
         self.focus_snes9x()
-        self.pressButton(Key.backspace)
-        self.focus_snes9x()
 
-        #Remove the background layer
-        time.sleep(1)
+        # Disable the background and the in-frame counter
         self.pressButton('2')
-
-        self.connect_lua_socket()
-        # Start RAM listener in background
-        threading.Thread(target=self.listen_for_ram_data, daemon=True).start()
-        
+        self.pressButton('.')
         if not os.path.exists(SAVESTATE_PATH):
             print("No savestate found! Creating new Level 1 savestate.")
             # Get the level 1 savestate
@@ -130,11 +120,17 @@ class SNES9x(WrapperInterface):
             for _ in range(4):
                 self.pressButton(Key.space)
                 time.sleep(0.5)
-            time.sleep(3)
+            time.sleep(4)
             self.saveState("smw.000")
         else:
             print("Savestate found! Loading current savestate")
             self.loadState("smw.000")
+        self.pressButton(Key.backspace)
+        self.focus_snes9x()
+
+        # This was originally used for listening for RAM data but this will be changing soon. Possibly remove
+        self.connect_lua_socket()
+        #threading.Thread(target=self.listen_for_ram_data, daemon=True).start()
 
         # Start Movie
         self.pressButton("m")
@@ -192,21 +188,43 @@ class SNES9x(WrapperInterface):
         self.keyboard.release(Key.shift)
         print(f"Saving state to {state_name}...")
 
+
+
     def screenshot(self) -> np.ndarray:
         """
-        Take a screenshot. (Convert to grayscale) and return as an np.array
+        Capture a pixel-perfect SNES frame, save it as a file, and return as a NumPy array.
         """
+        WINDOW_TITLE = "Snes9x"
         windows = gw.getWindowsWithTitle(WINDOW_TITLE)
         if not windows:
             raise RuntimeError(f"No window found with title containing '{WINDOW_TITLE}'")
 
         self.refocus_game()
-
         win = windows[0]
 
+        # Grab full window
         bbox = (win.left, win.top, win.right, win.bottom)
-        img_gray = ImageGrab.grab(bbox=bbox).convert("L")
-        return np.array(img_gray)
+        img = ImageGrab.grab(bbox=bbox).convert("L")
+
+        # Crop borders
+        trim_top = 70
+        trim_bottom = 20
+        trim_left = 8
+        trim_right = 8
+        img_cropped = img.crop((
+            trim_left,
+            trim_top,
+            img.width - trim_right,
+            img.height - trim_bottom
+        ))
+
+        img_resized = img_cropped.resize((256, 224), Image.NEAREST)
+
+        # Save a sample image; currently removed. Uncomment for debugging
+        img_resized.save(f"screenshot_test.png")
+
+        return np.array(img_resized)
+
     
 
     def listen_for_ram_data(self):
@@ -229,7 +247,7 @@ class SNES9x(WrapperInterface):
                     if part.startswith("Frame="):
                         frame = int(part.split("=")[1])
                     else:
-                        ram_parts.append(part)  # already in addr=value format
+                        ram_parts.append(part)
 
                 with self.ram_mutex:
                     self.ram_map.clear()

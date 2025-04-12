@@ -17,14 +17,14 @@ EXTRACT_PATH = os.path.join(SCRIPT_DIR, EXTRACT_FOLDER)
 SNES9X_EXE = os.path.join(EXTRACT_PATH, "snes9x.exe")
 ROM_PATH = os.path.join(SCRIPT_DIR, "snes9x/Roms/smw.sfc")
 ROM_PATCH_PATH = os.path.join(SCRIPT_DIR, "snes9x/Roms/smw_patched.sfc")
-LUA_SCRIPT = os.path.join(SCRIPT_DIR, "memory_server.lua")
+LUA_SCRIPT = os.path.join(SCRIPT_DIR, "lua_server.lua")
 ROMS_FOLDER = os.path.join(EXTRACT_PATH, "Roms")
 COLOR_IMAGE_PATH = "snes9x/Screenshots/smw000.png"
 CONFIGURATION_PATH = "snes9x/snes9x.cfg"
 
 LUA_INSTALLER_URL = "https://github.com/rjpcomputing/luaforwindows/releases/download/v5.1.5-52/LuaForWindows_v5.1.5-52.exe"
 LUA_INSTALLER_NAME = "LuaForWindows_v5.1.5-52.exe"
-LUA_EXPECTED_PATH = "C:\Program Files (x86)\Lua\5.1"
+LUA_EXPECTED_PATH = r"C:\Program Files (x86)\Lua\5.1"
 FLIPS_EXE = "flips.exe"
 FLIPS_DIR = "flips"
 FLIPS_PATH = os.path.join(FLIPS_DIR, FLIPS_EXE)
@@ -49,6 +49,7 @@ def main():
     set_hotkey(CONFIGURATION_PATH, "MovieRecord", "M")
     set_last_lua_script(CONFIGURATION_PATH, LUA_SCRIPT)
     set_cfg_option(CONFIGURATION_PATH, "MovieDefaultStartFromReset", "FALSE")
+    set_cfg_option(CONFIGURATION_PATH, "MessageDisplayTime", 0)
     test_lua_socket_paths()
 
     # Ensure ROM exists
@@ -65,15 +66,15 @@ def main():
         patch_game(flips_path)
         print("Patch complete.")
     else:
-        print("Patched ROM already exists. Skipping patch step.")
+        print("Patched ROM found")
 
     print("Emulator initialized!")
 
 def patch_game(flips_path):
 
     bps_patch = "patch.bps"
-    input_rom = "snes9x\Roms\smw.sfc"
-    output_rom = "snes9x\Roms\smw_patched.sfc"
+    input_rom = r"snes9x\Roms\smw.sfc"
+    output_rom = r"snes9x\Roms\smw_patched.sfc"
     cmd = [
         flips_path,
         "--apply",
@@ -212,9 +213,6 @@ def create_roms_folder():
     
     if not os.path.exists(roms_path):
         os.makedirs(roms_path)
-        print(f"'Roms' folder created at: {roms_path}")
-    else:
-        print(f"'Roms' folder already exists at: {roms_path}")
         
     return roms_path
 
@@ -224,9 +222,6 @@ def create_saves_folder():
     
     if not os.path.exists(saves_path):
         os.makedirs(saves_path)
-        print(f"'Saves' folder created at: {saves_path}")
-    else:
-        print(f"'Saves' folder already exists at: {saves_path}")
 
     return saves_path
 
@@ -236,9 +231,6 @@ def create_screenshots_folder():
     
     if not os.path.exists(roms_path):
         os.makedirs(roms_path)
-        print(f"'Screenshots' folder created at: {roms_path}")
-    else:
-        print(f"'Screenshots' folder already exists at: {roms_path}")
 
     return roms_path
 
