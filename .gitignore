@@ -12,3 +12,6 @@ stdout.txt
 *.png
 *.smv
 *.exe
+*.smc
+/flips
+flips

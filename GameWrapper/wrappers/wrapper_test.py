@@ -50,4 +50,4 @@ def test_save_screenshot(np_array: np.ndarray, filename: str = "screenshot_debug
     print(f"Saved image to {filename}")
 
 if __name__ == '__main__':
-    main()
+    main() 

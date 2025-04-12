@@ -18,10 +18,10 @@ os.chdir(SCRIPT_DIR)
 
 # Paths
 SNES9X_EXE = os.path.abspath(os.path.join(SCRIPT_DIR, "../../snes9x/snes9x.exe"))
-ROM_PATH = os.path.abspath(os.path.join(SCRIPT_DIR, "../../snes9x/Roms/smw.sfc"))
+ROM_PATH = os.path.abspath(os.path.join(SCRIPT_DIR, "../../snes9x/Roms/smw_patched.sfc"))
 SCREENSHOTS_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "../../snes9x/Screenshots"))
 SCREENSHOTS_PATH = os.path.abspath(os.path.join(SCRIPT_DIR, "../../snes9x/Screenshots/smw000.png"))
-SAVESTATE_PATH = os.path.abspath(os.path.join(SCRIPT_DIR, "../../snes9x/Saves/smw.000"))
+SAVESTATE_PATH = os.path.abspath(os.path.join(SCRIPT_DIR, "../../snes9x/Saves/smw_patched.000"))
 LUASCRIPT_PATH = os.path.abspath(os.path.join(SCRIPT_DIR, "../../memory_server.lua"))
 WINDOW_TITLE = "Snes9x rerecording 1.51 v7.1"
 HOST = '127.0.0.1'
@@ -130,12 +130,6 @@ class SNES9x(WrapperInterface):
             for _ in range(4):
                 self.pressButton(Key.space)
                 time.sleep(0.5)
-            time.sleep(15)
-            self.pressButton(Key.space)
-            time.sleep(3)
-            self.pressButton(Key.left)
-            time.sleep(2)
-            self.pressButton('A')
             time.sleep(3)
             self.saveState("smw.000")
         else:

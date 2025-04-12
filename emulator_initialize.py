@@ -4,6 +4,7 @@ import zipfile
 import urllib.request
 import subprocess
 import time
+import io
 
 FILENAME = "snes9x-1.51-rerecording-v7.1-win32.zip"
 DOWNLOAD_URL = "https://github.com/TASEmulators/snes9x-rr/releases/download/snes9x-151-v7.1/snes9x-1.51-rerecording-v7.1-win32.zip"
@@ -15,6 +16,7 @@ ZIP_PATH = os.path.join(SCRIPT_DIR, FILENAME)
 EXTRACT_PATH = os.path.join(SCRIPT_DIR, EXTRACT_FOLDER)
 SNES9X_EXE = os.path.join(EXTRACT_PATH, "snes9x.exe")
 ROM_PATH = os.path.join(SCRIPT_DIR, "snes9x/Roms/smw.sfc")
+ROM_PATCH_PATH = os.path.join(SCRIPT_DIR, "snes9x/Roms/smw_patched.sfc")
 LUA_SCRIPT = os.path.join(SCRIPT_DIR, "memory_server.lua")
 ROMS_FOLDER = os.path.join(EXTRACT_PATH, "Roms")
 COLOR_IMAGE_PATH = "snes9x/Screenshots/smw000.png"
@@ -23,32 +25,84 @@ CONFIGURATION_PATH = "snes9x/snes9x.cfg"
 LUA_INSTALLER_URL = "https://github.com/rjpcomputing/luaforwindows/releases/download/v5.1.5-52/LuaForWindows_v5.1.5-52.exe"
 LUA_INSTALLER_NAME = "LuaForWindows_v5.1.5-52.exe"
 LUA_EXPECTED_PATH = "C:\Program Files (x86)\Lua\5.1"
+FLIPS_EXE = "flips.exe"
+FLIPS_DIR = "flips"
+FLIPS_PATH = os.path.join(FLIPS_DIR, FLIPS_EXE)
+FLIPS_URL = "https://dl.smwcentral.net/11474/floating.zip"
+
 
 def main():
     # Check for emulator executable and install if not available
-    # Create required folder paths and start emulator
     get_emulator()
     create_roms_folder()
     create_screenshots_folder()
     create_saves_folder()
+    
+    # Start emulator briefly to generate config files
     process = subprocess.Popen([SNES9X_EXE])
     time.sleep(1)
-    process.terminate()  # Sends SIGTERM on Unix or WM_CLOSE on Windows
+    process.terminate()
     process.wait()
+
+    # Configure emulator hotkeys and paths
     set_hotkey(CONFIGURATION_PATH, "ReloadLuaScript", "Backspace")
     set_hotkey(CONFIGURATION_PATH, "MovieRecord", "M")
     set_last_lua_script(CONFIGURATION_PATH, LUA_SCRIPT)
     set_cfg_option(CONFIGURATION_PATH, "MovieDefaultStartFromReset", "FALSE")
     test_lua_socket_paths()
-    if not os.path.isfile(ROM_PATH):
-        while not os.path.isfile(ROM_PATH):
-            print(f"ROM file is missing. Please place 'smw.sfc' in: {ROMS_FOLDER}")
-            input("Once the file is there, press Enter to continue...")
 
-            print("ROM found! Emulator initialized.")
+    # Ensure ROM exists
+    while not os.path.isfile(ROM_PATH):
+        print(f"ROM file is missing. Please place 'smw.sfc' in: {ROMS_FOLDER}")
+        input("Once the file is there, press Enter to continue...")
 
+    print("ROM found!")
+
+    # Patch the ROM if needed
+    flips_path = create_flips_folder()
+    if not os.path.isfile(ROM_PATCH_PATH):
+        print("Patching ROM...")
+        patch_game(flips_path)
+        print("Patch complete.")
     else:
-        print("Emulator initialized!")
+        print("Patched ROM already exists. Skipping patch step.")
+
+    print("Emulator initialized!")
+
+def patch_game(flips_path):
+
+    bps_patch = "patch.bps"
+    input_rom = "snes9x\Roms\smw.sfc"
+    output_rom = "snes9x\Roms\smw_patched.sfc"
+    cmd = [
+        flips_path,
+        "--apply",
+        bps_patch,
+        input_rom,
+        output_rom
+    ]
+
+    result = subprocess.run(cmd, capture_output=True, text=True)
+
+    # Output results
+    print("STDOUT:\n", result.stdout)
+    print("STDERR:\n", result.stderr)
+
+def create_flips_folder():
+    if os.path.exists(FLIPS_PATH):
+        print("FLIPS already present.")
+        return FLIPS_PATH
+
+    print("Downloading FLIPS...")
+    os.makedirs(FLIPS_DIR, exist_ok=True)
+    r = requests.get(FLIPS_URL)
+    with zipfile.ZipFile(io.BytesIO(r.content)) as z:
+        for name in z.namelist():
+            if name.endswith(FLIPS_EXE):
+                z.extract(name, FLIPS_DIR)
+                print(f"Extracted {name} to {FLIPS_DIR}")
+                return FLIPS_PATH
+
 
 def set_cfg_option(cfg_path, option_name, new_value):
 
@@ -72,9 +126,7 @@ def set_cfg_option(cfg_path, option_name, new_value):
     with open(cfg_path, 'w', encoding='utf-8') as f:
         f.writelines(updated_lines)
 
-    print(f"[✔] Set {option_name} = {new_value}")
-
-
+    print(f"Set {option_name} = {new_value}")
 
 def set_last_lua_script(cfg_path, script_path):
     with open(cfg_path, 'r', encoding='utf-8') as f:
