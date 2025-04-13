@@ -1,17 +1,18 @@
 import os
-from pynput.keyboard import Controller, Key
-import time
+import socket
 import subprocess
-from PIL import Image, ImageGrab
+import sys
+import threading
+import time
+
 import numpy as np
 import pygetwindow as gw
-import win32gui
 import win32con
+import win32gui
+from PIL import Image, ImageGrab
+from pynput.keyboard import Controller, Key
+
 from GameWrapper.wrappers.WrapperInterface import WrapperInterface
-import socket
-import threading
-import sys
-import pygetwindow as gw
 
 # Set the current directory as the script execution directory
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -56,7 +57,7 @@ class SNES9x(WrapperInterface):
         self.ram_map:dict[int:int] = {}
         self.ram_mutex = threading.Lock()
         self.socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-        self.socket.settimeout(5)
+        self.socket.settimeout(100)
 
     def send_command(self, command:str):
         self.socket.send(f"{command}\n".encode())
@@ -212,7 +213,6 @@ class SNES9x(WrapperInterface):
         return np.array(img_resized)
 
     def populate_mem(self) -> None:
-        print(f"Populating memory...")
         self.socket.send("send_mem;\n".encode())
         ret_str = self.socket.recv(2048).decode().strip()
         parts = ret_str.split(',')
@@ -238,14 +238,14 @@ class SNES9x(WrapperInterface):
 
         return
 
-    def read16(self, address):
+    def readu16(self, address):
         #Read the upper and lower bytes
-        lower = np.uint16(self.read8(address))
-        upper = np.uint16(self.read8(address + 1))
+        lower = np.uint16(self.readu8(address))
+        upper = np.uint16(self.readu8(address + 1))
         return (upper << 8) | lower
         #Aquire the ram_map lock
 
-    def read8(self, address: int) -> np.int8:
+    def readu8(self, address: int) -> np.int8:
         with self.ram_mutex:
             if(address in self.ram_map.keys()):
                 return np.uint8(self.ram_map[address])

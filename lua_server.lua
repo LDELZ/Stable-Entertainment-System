@@ -15,7 +15,10 @@ local ram_addresses = {
 	0x7E00D2, -- Mario's X position in the current level (Upper byte)
     0x7E00D3, -- Mario's Y position in the current level (Lower byte)
 	0x7E00D4, -- Mario's Y position in the current level (Upper byte)
-	0x7E0071, -- Mario animation state flagc
+	0x7E0071, -- Mario animation state flags
+	0x7E007B, -- Marios X speed (signed)
+	0x7E007D, -- Marios Y speed (signed)
+	0x7E1493, -- end of level timer
 --     0x7E0010,
 --     0x7E0011,
 --     0x7E0012,
@@ -95,6 +98,12 @@ function wait_for_next_adv(msg, client)
         okay = false
         emu.frameadvance()
 
+--     elseif msg == "screenshot;" then
+--         local screenshot = gui.gdscreenshot()
+--         print("Len:" .. #screenshot)
+--         client:send(screenshot)
+--         okay = false
+
     elseif press_cmd == "press" then
         held_buttons = {}
     
@@ -156,8 +165,6 @@ local client, err = server:accept()
 ip, port = client:getsockname()
 client:settimeout(-1)
 print("Connected to  " .. ip .. ":" .. port)
-
-emu.speedmode('nothrottle')
 
 while true do
     local line, err =  client:receive("*l")

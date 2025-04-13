@@ -1,9 +1,8 @@
 import os
 import sys
-import time
-
-from PIL import Image
 import numpy as np
+from GameWrapper.wrappers.WrapperInterface import *
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
 from SNES9x import SNES9x
@@ -14,7 +13,13 @@ def main():
     while(True):
         emulator.advance(1)
         emulator.populate_mem()
-        print(emulator.read16(0x7E00D1))
+        x_vel = np.int8(emulator.readu8(X_VEL))
+        y_vel = np.int8(emulator.readu8(Y_VEL))
+        #print(f"Val: {x_vel}, {y_vel}")
+        hit_piece = emulator.readu8(END_LVL_TIMER)
+        print(hit_piece)
+        if(hit_piece == PLAYER_PIECE):
+            print("Piece!")
 
 if __name__ == '__main__':
     main()

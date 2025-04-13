@@ -4,8 +4,13 @@ from GameWrapper.button.Buttons import *
 GAME_RESOLUTION = (224,256)
 X_ADDR = 0x7E00D1
 Y_ADDR = 0x7E00D3
+X_VEL = 0x7E007B
+Y_VEL = 0x7E007D
 ANIM_TRIGGER_STATE = 0x7E0071
+END_LVL_TIMER = 0x7E1493
+PLAYER_PIECE = 28 # Will be 0 up until level is beat
 PLAYER_DEAD_VAL = 0x09
+PLAYER_HURT_VAL = 0x01
 
 class WrapperInterface():
     def __init__(self):
@@ -61,10 +66,10 @@ class WrapperInterface():
         print(f"Populating memory")
         return
 
-    def read16(self, address:int) -> np.int16:
+    def readu16(self, address:int) -> np.uint16:
         print(f"Reading 16 bits from address {hex(address)}")
-        return np.int16(0)
+        return np.uint16(0)
 
-    def read8(self, address:int) -> np.int8:
+    def readu8(self, address:int) -> np.uint8:
         print(f"Reading 8 bits from address {hex(address)}")
-        return np.int8(0)
+        return np.uint8(0)
