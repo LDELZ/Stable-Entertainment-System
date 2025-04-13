@@ -4,7 +4,7 @@ package.path = "C:/Program Files (x86)/Lua/5.1/lua/?.lua;" .. package.path
 package.cpath = "C:/Program Files (x86)/Lua/5.1/clibs/?.dll;C:/Program Files (x86)/Lua/5.1/clibs/?/core.dll;" .. package.cpath
 
 local socket = require("socket")
-local host = "127.0.0.1"
+local host = "0.0.0.0"
 local port = 12345
 local message_index = 1
 local slot1 = savestate.create(1)
@@ -39,25 +39,26 @@ local messages = {
     "send_mem;",
     "adv; 5",
     "press; r",
-    "adv; 30",
-    "wait; 3",
     "load_save;"
 }
 -- ###################################################################################
 
-function wait_for_next_adv()
-    local msg = messages[message_index]
+function sendOK(client)
+    print("Sending okay!")
+    client:send("Ok" .. "\n")
+    print("Sent okay!")
+end
 
-    if not msg then
-        print("No more messages. Pausing emulator.")
-        return false
-    end
+function wait_for_next_adv(msg, client)
+    --local msg = messages[message_index]
 
     -- Parse messages that have arguments
     local adv_cmd, adv_n = msg:match("^(adv);%s*(%d+)$")
     local wait_cmd, wait_n = msg:match("^(wait);%s*(%d+)$")
     local press_cmd, keys = msg:match("^(press);%s*([A-Za-z]+)$")
-    
+
+    local okay = true
+
     -- Select the corresponding message sent
     if adv_cmd == "adv" then
         local n = tonumber(adv_n)
@@ -69,19 +70,18 @@ function wait_for_next_adv()
             emu.frameadvance()
         end
         held_buttons = nil
-        return true
+
     
     elseif wait_cmd == "wait" then
         local seconds = tonumber(wait_n)
         print("Received \"" .. msg .. "\" - Waiting for " .. seconds .. " seconds")
         socket.sleep(seconds)
-        return true
-    
+
     elseif msg == "load_save;" then
         print("Received \"" .. msg .. "\" - Loading save state slot 1")
         savestate.load(slot1)
         emu.frameadvance()
-        return true
+
 
     elseif msg == "send_mem;" then
         local parts = {}
@@ -90,10 +90,11 @@ function wait_for_next_adv()
             table.insert(parts, string.format("0x%06X=%d", addr, value))
         end
         print("Received \"" .. msg .. "\" - Sending memory values: " .. table.concat(parts, ", "))
+        local return_msg = table.concat(parts, ",") .. "\n"
+        client:send(return_msg)
+        okay = false
         emu.frameadvance()
-        return true
-    
-    
+
     elseif press_cmd == "press" then
         held_buttons = {}
     
@@ -126,12 +127,15 @@ function wait_for_next_adv()
             if state then table.insert(line, button) end
         end
         print("Received \"" .. msg .. "\" - Holding: " .. table.concat(line, ", ") .. "during next frame advance")
-        return true
+
     
     else
         print("Received \"" .. msg .. "\" - Invalid message; Ignoring it")
         emu.frameadvance()
-        return true
+    end
+
+    if okay then
+        sendOK(client)
     end
 end
 
@@ -139,11 +143,32 @@ end
 -- Debugging part:
 -- Change this later to just wait for new messages from python
 -- Currently all this does is process the messages list
-while message_index <= #messages do
-    wait_for_next_adv()
-    message_index = message_index + 1
+-- while message_index <= #messages do
+--     wait_for_next_adv(messages[message_index])
+--     message_index = message_index + 1
+-- end
+local server = assert(socket.bind(host, port))
+local tcp = assert(socket.tcp())
+
+local ip, port = server:getsockname()
+print("Waiting for connection on " .. ip .. ":" .. port)
+local client, err = server:accept()
+ip, port = client:getsockname()
+client:settimeout(-1)
+print("Connected to  " .. ip .. ":" .. port)
+
+emu.speedmode('nothrottle')
+
+while true do
+    local line, err =  client:receive("*l")
+    if not err then
+        wait_for_next_adv(line, client)
+    else
+        emu.frameadvance()
+    end
 end
 
-print("All messages processed. Pausing emulator")
-emu.pause()
+--
+-- print("All messages processed. Pausing emulator")
+-- emu.pause()
 -- ###################################################################################

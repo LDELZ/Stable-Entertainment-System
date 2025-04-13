@@ -22,6 +22,7 @@ class SmwEnvironment(gym.Env):
     ) -> tuple[ObsType, SupportsFloat, bool, bool, dict[str, Any]]:
         #Code for rewards go here
         obs = self._get_obs()
+        self.game_wrapper.populate_mem()
         terminate = self.game_wrapper.read8(ANIM_TRIGGER_STATE) == 9
         if terminate:
             print("Mario died!")
@@ -43,7 +44,6 @@ class SmwEnvironment(gym.Env):
         options: dict[str, Any] | None = None,
     ) -> tuple[ObsType, dict[str, Any]]:
         if not self.game_wrapper.is_ready:
-            self.game_wrapper.launchEmulator()
             self.game_wrapper.startGame()
 
         self.game_wrapper.loadState("state")

@@ -1,2 +1,2 @@
-BUTTONS = ( 'A', 'B', 'X', 'Y', 'L', 'R', 'UP', 'DOWN', 'LEFT', 'RIGHT') # 'START', 'SELECT')
+BUTTONS = ( 'A', 'B', 'X', 'Y', 'L', 'R', 'u', 'd', 'l', 'r') # 'START', 'SELECT')
 

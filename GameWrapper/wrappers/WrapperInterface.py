@@ -1,7 +1,7 @@
 import numpy as np
 from GameWrapper.button.Buttons import *
 
-GAME_RESOLUTION = (499, 520)
+GAME_RESOLUTION = (224,256)
 X_ADDR = 0x7E00D1
 Y_ADDR = 0x7E00D3
 ANIM_TRIGGER_STATE = 0x7E0071
@@ -57,6 +57,9 @@ class WrapperInterface():
         print(f"Taking a screenshot!")
         return np.zeros(shape=(*GAME_RESOLUTION,))
 
+    def populate_mem(self) -> None:
+        print(f"Populating memory")
+        return
 
     def read16(self, address:int) -> np.int16:
         print(f"Reading 16 bits from address {hex(address)}")

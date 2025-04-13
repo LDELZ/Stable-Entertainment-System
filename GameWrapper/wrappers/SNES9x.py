@@ -55,32 +55,33 @@ class SNES9x(WrapperInterface):
         self.held_keys = set()
         self.ram_map:dict[int:int] = {}
         self.ram_mutex = threading.Lock()
+        self.socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+        self.socket.settimeout(5)
+
+    def send_command(self, command:str):
+        self.socket.send(f"{command}\n".encode())
+        self.socket.recv(1000) #Wait for an ok
 
     def pressButton(self, button):
         if not self.disable_keys:
             key = KEYMAP.get(button, button)
             self.keyboard.press(key)
-            time.sleep(0.1)
+            time.sleep(1)
             self.keyboard.release(key)
     
     def connect_lua_socket(self, host=HOST, port=PORT):
-        """Starts a TCP server and waits for a Lua socket connection"""
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.bind((host, port))
-        s.listen()
-        print(f"[Socket] Listening on {host}:{port}...")
-
-        conn, addr = s.accept()
-        print(f"[Socket] Connected by {addr}")
-        self.conn = conn
+        """Connect to the lua server"""
+        print("Connecting to server...")
+        self.socket.connect((HOST, PORT))
+        print("Connected!")
 
     def focus_snes9x(self):
-            for window in gw.getWindowsWithTitle("snes9x"):
-                win32gui.ShowWindow(window._hWnd, win32con.SW_RESTORE)
-                win32gui.SetForegroundWindow(window._hWnd)
-                print("SNES9x window focused.")
-                return
-            print("SNES9x window not found.")
+        for window in gw.getWindowsWithTitle("snes9x"):
+            win32gui.ShowWindow(window._hWnd, win32con.SW_RESTORE)
+            win32gui.SetForegroundWindow(window._hWnd)
+            print("SNES9x window focused.")
+            return
+        print("SNES9x window not found.")
     
     def launchEmulator(self):
         parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
@@ -93,8 +94,6 @@ class SNES9x(WrapperInterface):
         """
         print("Starting Game!")
         #TEMP enable keypresses
-        save_disable = self.disable_keys
-        self.disable_keys = False
 
         # Ensure the ROM file still exists in the Roms folder
         if not os.path.exists(ROM_PATH):
@@ -107,12 +106,20 @@ class SNES9x(WrapperInterface):
 
         # Open the emulator with the SMW ROM
         subprocess.Popen([SNES9X_EXE, ROM_PATH])
-        time.sleep(1)
+        self.wait_for_windows("Snes9x rerecording")
         self.focus_snes9x()
 
         # Disable the background and the in-frame counter
         self.pressButton('2')
         self.pressButton('.')
+        self.pressButton(Key.backspace)
+        self.wait_for_windows("Lua Script")
+        self.focus_snes9x()
+
+        # This was originally used for listening for RAM data but this will be changing soon. Possibly remove
+        self.connect_lua_socket()
+        #threading.Thread(target=self.listen_for_ram_data, daemon=True).start()
+
         if not os.path.exists(SAVESTATE_PATH):
             print("No savestate found! Creating new Level 1 savestate.")
             # Get the level 1 savestate
@@ -125,38 +132,20 @@ class SNES9x(WrapperInterface):
         else:
             print("Savestate found! Loading current savestate")
             self.loadState("smw.000")
-        self.pressButton(Key.backspace)
-        self.focus_snes9x()
-
-        # This was originally used for listening for RAM data but this will be changing soon. Possibly remove
-        self.connect_lua_socket()
-        #threading.Thread(target=self.listen_for_ram_data, daemon=True).start()
 
         # Start Movie
-        self.pressButton("m")
-        time.sleep(0.5)
-        self.pressButton(Key.enter)
+        # self.pressButton("m")
+        # time.sleep(0.5)
+        # self.pressButton(Key.enter)
 
-        # Enter frame-advance mode
-        self.pressButton("\\")
         self.is_ready = True
-        self.disable_keys = save_disable
 
     def sendButtons(self, key_list:list[str]):
         """
         Sends the buttons to the emulator. Any button not pushed should be released
         """
-        if self.disable_keys:
-            return
-        active = set(key_list)
-
-        for logical_btn, physical_key in self.keymapping.items():
-            if logical_btn in active and physical_key not in self.held_keys:
-                self.keyboard.press(physical_key)
-                self.held_keys.add(physical_key)
-            elif logical_btn not in active and physical_key in self.held_keys:
-                self.keyboard.release(physical_key)
-                self.held_keys.remove(physical_key)
+        print(f"Sending {key_list}")
+        self.send_command("press;" + "".join(key_list))
 
     def releaseAllButtons(self):
         self.sendButtons([])
@@ -165,17 +154,14 @@ class SNES9x(WrapperInterface):
         """
         Advances the emulator by n frames
         """
-        time.sleep(0.1)
-        for _ in range(n):
-            self.pressButton("\\")
-
+        self.send_command(f"adv; {n}")
 
     def loadState(self, state_name:str):
         """
         Make the emulator load some system state called state_name
         """
-        self.pressButton(Key.f1)
         print(f"Loading save state {state_name}...")
+        self.send_command("load_save;")
 
     def saveState(self, state_name:str):
         """
@@ -225,48 +211,38 @@ class SNES9x(WrapperInterface):
 
         return np.array(img_resized)
 
-    
+    def populate_mem(self) -> None:
+        print(f"Populating memory...")
+        self.socket.send("send_mem;\n".encode())
+        ret_str = self.socket.recv(2048).decode().strip()
+        parts = ret_str.split(',')
 
-    def listen_for_ram_data(self):
-        while True:
-            try:
-                self.conn.send("Ok\n".encode())
-                data = self.conn.recv(1024)
-                if not data:
-                    break
-                decoded = data.decode().strip()
-                # Split into key=value parts
-                parts = decoded.split(',')
+        frame = None
+        ram_parts = []
 
-                frame = None
-                ram_parts = []
+        # Lock the ram mutex
 
-                # Lock the ram mutex
+        for part in parts:
+            if part.startswith("Frame="):
+                frame = int(part.split("=")[1])
+            else:
+                ram_parts.append(part)
 
-                for part in parts:
-                    if part.startswith("Frame="):
-                        frame = int(part.split("=")[1])
-                    else:
-                        ram_parts.append(part)
+        with self.ram_mutex:
+            self.ram_map.clear()
+            for rampart in ram_parts:
+                eq_sign = rampart.find("=")
+                addr = rampart[0:eq_sign]
+                val = rampart[eq_sign + 1:]
+                self.ram_map[int(addr, 16)] = int(val, 10)
 
-                with self.ram_mutex:
-                    self.ram_map.clear()
-                    for rampart in ram_parts:
-                        eq_sign = rampart.find("=")
-                        addr = rampart[0:eq_sign]
-                        val = rampart[eq_sign+1:]
-                        self.ram_map[int(addr, 16)] = int(val, 10)
-
-
-            except Exception as e:
-                print(f"[ERROR] Failed to parse RAM data: {e}")
-                #break
+        return
 
     def read16(self, address):
         #Read the upper and lower bytes
-        lower = self.read8(address)
-        upper = self.read8(address + 1)
-        return np.uint16((upper << 8) | lower)
+        lower = np.uint16(self.read8(address))
+        upper = np.uint16(self.read8(address + 1))
+        return (upper << 8) | lower
         #Aquire the ram_map lock
 
     def read8(self, address: int) -> np.int8:
@@ -286,5 +262,9 @@ class SNES9x(WrapperInterface):
         if win.isMinimized:
             win.restore()
         win.activate()
-        time.sleep(0.5)
+        time.sleep(0.2)
 
+    def wait_for_windows(self, name:str):
+        while len(gw.getWindowsWithTitle(name)) == 0:
+            time.sleep(0.2)
+        print(f"Found {name}!")
