@@ -25,7 +25,7 @@ class SmwEnvironment(gym.Env):
         obs = self._get_obs()
         self.game_wrapper.populate_mem()
         mario_vel = self.get_mario_speed()
-        mario_pos = self.get_mario_speed()
+        mario_pos = self.get_mario_pos()
         beat_level = self.game_wrapper.readu8(END_LVL_TIMER) != 0
 
         mario_dead = self.game_wrapper.readu8(ANIM_TRIGGER_STATE) == 9
