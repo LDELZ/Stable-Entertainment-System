@@ -15,16 +15,16 @@ from pynput.keyboard import Controller, Key
 from GameWrapper.wrappers.WrapperInterface import WrapperInterface
 
 # Set the current directory as the script execution directory
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-os.chdir(SCRIPT_DIR)
+SCRIPT_DIR = os.path.curdir #os.path.dirname(os.path.abspath(__file__))
+#os.chdir(SCRIPT_DIR)
 
 # Paths
-SNES9X_EXE = os.path.abspath(os.path.join(SCRIPT_DIR, "../../snes9x/snes9x.exe"))
-ROM_PATH = os.path.abspath(os.path.join(SCRIPT_DIR, "../../snes9x/Roms/smw_patched.sfc"))
-SCREENSHOTS_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "../../snes9x/Screenshots"))
-SCREENSHOTS_PATH = os.path.abspath(os.path.join(SCRIPT_DIR, "../../snes9x/Screenshots/smw000.png"))
-SAVESTATE_PATH = os.path.abspath(os.path.join(SCRIPT_DIR, "../../snes9x/Saves/smw_patched.000"))
-LUASCRIPT_PATH = os.path.abspath(os.path.join(SCRIPT_DIR, "../../lua_server.lua"))
+SNES9X_EXE = os.path.abspath(os.path.join(SCRIPT_DIR, "snes9x/snes9x.exe"))
+ROM_PATH = os.path.abspath(os.path.join(SCRIPT_DIR, "snes9x/Roms/smw_patched.sfc"))
+SCREENSHOTS_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "snes9x/Screenshots"))
+SCREENSHOTS_PATH = os.path.abspath(os.path.join(SCRIPT_DIR, "snes9x/Screenshots/smw000.png"))
+SAVESTATE_PATH = os.path.abspath(os.path.join(SCRIPT_DIR, "snes9x/Saves/smw_patched.000"))
+LUASCRIPT_PATH = os.path.abspath(os.path.join(SCRIPT_DIR, "lua_server.lua"))
 WINDOW_TITLE = "Snes9x rerecording 1.51 v7.1"
 HOST = '127.0.0.1'
 PORT = 12345

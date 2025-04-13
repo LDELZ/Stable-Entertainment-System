@@ -13,9 +13,12 @@ def main():
     while(True):
         emulator.advance(1)
         emulator.populate_mem()
+        x_pos = np.uint16(emulator.readu16(X_ADDR))
+        y_pos = np.uint16(emulator.readu16(Y_ADDR))
         x_vel = np.int8(emulator.readu8(X_VEL))
         y_vel = np.int8(emulator.readu8(Y_VEL))
-        #print(f"Val: {x_vel}, {y_vel}")
+        print(f"Pos: {x_pos}, {y_pos}")
+        print(f"Val: {x_vel}, {y_vel}")
         hit_piece = emulator.readu8(END_LVL_TIMER)
         print(hit_piece)
         if(hit_piece == PLAYER_PIECE):

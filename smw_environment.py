@@ -13,7 +13,7 @@ class SmwEnvironment(gym.Env):
         self.observation_space = spaces.Box(0, 255, (*GAME_RESOLUTION,), np.uint8)
         self.action_space = spaces.Box(0, 1, (len(BUTTONS),), np.uint8)
         self.frame_skip = frame_skip
-        self.end_goal = (704, 272)
+        self.end_goal = (4808, 352)
 
     def _get_obs(self):
         return self.game_wrapper.screenshot()
@@ -43,7 +43,8 @@ class SmwEnvironment(gym.Env):
 
         reward = 4 * closingVel + 8 * closingVel ** 2
         reward += 100 * beat_level
-        reward -= 200 * mario_dead
+        punishment += 200 * mario_dead
+
 
         print(f"Mario is at ({mario_pos})")
 
