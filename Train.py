@@ -1,5 +1,7 @@
 from stable_baselines3.common.callbacks import CheckpointCallback
 from stable_baselines3 import A2C
+from stable_baselines3.common.vec_env import VecNormalize, VecEnv
+
 from smw_environment import SmwEnvironment
 from GameWrapper.wrappers.SNES9x import SNES9x
 import sys
@@ -11,7 +13,7 @@ if len(sys.argv) >= 2:
     checkpoint_name = sys.argv[1]
 
 checkpoint_callback = CheckpointCallback(
-    save_freq=20000,
+    save_freq=3000,
     save_path=".",
     name_prefix=f"models/{checkpoint_name}",
     save_replay_buffer=True,
