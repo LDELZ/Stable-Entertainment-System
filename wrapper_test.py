@@ -3,9 +3,9 @@ import sys
 import numpy as np
 from GameWrapper.wrappers.WrapperInterface import *
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+#sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
-from SNES9x import SNES9x
+from GameWrapper.wrappers.SNES9x import SNES9x
 
 def main():
     emulator = SNES9x()
@@ -23,6 +23,7 @@ def main():
         print(hit_piece)
         if(hit_piece == PLAYER_PIECE):
             print("Piece!")
+        emulator.screenshot()
 
 if __name__ == '__main__':
     main()
