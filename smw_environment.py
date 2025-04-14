@@ -7,12 +7,12 @@ from gymnasium.core import ObsType, ActType
 from GameWrapper.wrappers.WrapperInterface import *
 from GameWrapper.button.Buttons import BUTTONS
 
-PROGRESS_COUNTDOWN_DEFAULT = 2.2 #Seconds
+PROGRESS_COUNTDOWN_DEFAULT = 2.75 #Seconds
 
 class SmwEnvironment(gym.Env):
     def __init__(self, wrapper:WrapperInterface, frame_skip:int=4):
         self.game_wrapper = wrapper
-        self.observation_space = spaces.Box(0, 255, (*GAME_RESOLUTION,), np.uint8)
+        self.observation_space = spaces.Box(0, 255, (1, *GAME_RESOLUTION), np.uint8)
         self.action_space = spaces.Box(0, 1, (len(BUTTONS),), np.uint8)
         self.frame_skip = frame_skip
         self.end_goal = (4800, 350)
@@ -63,13 +63,11 @@ class SmwEnvironment(gym.Env):
         distAway  = np.sqrt(diffInPos.dot(diffInPos))
         closingVel = - (diffInPos.dot(diffInVel)) / distAway
 
-        reward = (1.8 * closingVel + 1.9 * closingVel ** 2)
-        reward += 200 * beat_level
+        reward = (1.8 * closingVel + 1.1 * closingVel ** 2)
+        reward += 100 * beat_level
         punishment += 200 * mario_dead
-        #punishment += 200 * timesup
+        #punishment += 30 * timesup
 
-        if(reward < 0):
-            reward = 0.25 * self.last_reward
 
         self.last_reward = reward
 
