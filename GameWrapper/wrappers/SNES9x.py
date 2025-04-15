@@ -250,7 +250,7 @@ class SNES9x(WrapperInterface):
             if(address in self.ram_map.keys()):
                 return np.uint8(self.ram_map[address])
             else:
-                raise RuntimeError(f"Address {address:x} is not in the ram map!")
+                return np.uint8(0)
 
     def refocus_game(self):
         if self.disable_keys:

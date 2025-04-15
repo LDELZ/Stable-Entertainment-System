@@ -4,36 +4,50 @@ import gymnasium as gym
 import numpy as np
 from gymnasium import spaces
 from gymnasium.core import ObsType, ActType
+from pandas.core.interchange.from_dataframe import buffer_to_ndarray
+
 from GameWrapper.wrappers.WrapperInterface import *
-from GameWrapper.button.Buttons import BUTTONS
+from GameWrapper.button.Buttons import BUTTONS, DIR_COMBOS
 
 PROGRESS_COUNTDOWN_DEFAULT = 2.75 #Seconds
 
 class SmwEnvironment(gym.Env):
     def __init__(self, wrapper:WrapperInterface, frame_skip:int=4):
         self.game_wrapper = wrapper
-        self.observation_space = spaces.Box(0, 255, (1, *GAME_RESOLUTION), np.uint8)
+        self.observation_space = spaces.Dict({
+            "rel_x": spaces.Box(0, 255, (1,), np.uint8),
+            "screen" : spaces.Box(0, 255, (1, *GAME_RESOLUTION), np.uint8),
+        })
         self.action_space = spaces.Box(0, 1, (len(BUTTONS),), np.uint8)
         self.frame_skip = frame_skip
-        self.end_goal = (4800, 350)
+        self.end_goal = (718, 350)
         self.farthest_progress = 0
         self.progress_countdown = 0 # Time since progress
         self.last_reward = 0
 
     def _get_obs(self):
-        return self.game_wrapper.screenshot()
+        xpos = self.get_mario_pos()[0]
+        rel_pos = np.round((self.end_goal[0] - xpos) / self.end_goal[0] * 255).astype(np.uint8)
+        if rel_pos < 0:
+           rel_pos = 0
+        retDict = {"screen" : self.game_wrapper.screenshot(), "rel_x" : rel_pos}
+        return retDict
 
     def step(
         self, action: ActType
     ) -> tuple[ObsType, SupportsFloat, bool, bool, dict[str, Any]]:
         #Code for rewards go here
-        buttons_to_send = [button for idx,button in enumerate(BUTTONS) if action[idx] == 1]
+        print(action)
+        buttons_to_send = [button for idx,button in enumerate(BUTTONS) if action[idx] >= 0.5 and button != "D"]
+        #buttons_to_send.append(DIR_COMBOS[int(action[4])])
 
         self.game_wrapper.sendButtons(buttons_to_send)
         self.game_wrapper.advance(self.frame_skip)
 
-        obs = self._get_obs()
         self.game_wrapper.populate_mem()
+        obs = self._get_obs()
+        print(obs["rel_x"])
+
         mario_vel = self.get_mario_speed()
         mario_pos = self.get_mario_pos()
         beat_level = self.game_wrapper.readu8(END_LVL_TIMER) != 0
@@ -64,9 +78,9 @@ class SmwEnvironment(gym.Env):
         closingVel = - (diffInPos.dot(diffInVel)) / distAway
 
         reward = (1.8 * closingVel + 1.1 * closingVel ** 2)
-        reward += 100 * beat_level
-        punishment += 200 * mario_dead
-        #punishment += 30 * timesup
+        reward += 30 * beat_level
+        #punishment += 200 * mario_dead
+        punishment += 30 * timesup
 
 
         self.last_reward = reward

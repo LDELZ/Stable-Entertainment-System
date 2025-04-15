@@ -69,6 +69,7 @@ function wait_for_next_adv(msg, client)
         for i = 1, n do
             if held_buttons then
                 joypad.set(1, held_buttons)
+                print(held_buttons)
             end
             emu.frameadvance()
         end
@@ -96,7 +97,6 @@ function wait_for_next_adv(msg, client)
         local return_msg = table.concat(parts, ",") .. "\n"
         client:send(return_msg)
         okay = false
-        emu.frameadvance()
 
 --     elseif msg == "screenshot;" then
 --         local screenshot = gui.gdscreenshot()
