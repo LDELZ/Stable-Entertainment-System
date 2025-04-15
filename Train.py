@@ -8,15 +8,15 @@ from GameWrapper.wrappers.SNES9x import SNES9x
 import sys
 from datetime import datetime
 
-checkpoint_name = datetime.now().strftime("rl_smw_A2c_%m-%d-%y_%I_%M:%S")
+checkpoint_name = datetime.now().strftime("rl_smw_A2c_")
 
 if len(sys.argv) >= 2:
     checkpoint_name = sys.argv[1]
 
 checkpoint_callback = CheckpointCallback(
     save_freq=1000,
-    save_path=".",
-    name_prefix=f"./models/{checkpoint_name}",
+    save_path="./models/",
+    name_prefix=f"{checkpoint_name}",
     save_replay_buffer=True,
     save_vecnormalize=True,
 )
