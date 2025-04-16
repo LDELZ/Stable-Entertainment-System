@@ -82,6 +82,12 @@ class SmwEnvironment(gym.Env):
         #punishment += 200 * mario_dead
         punishment += 30 * timesup
 
+        if beat_level:
+            term_reason = "Beat"
+        elif timesup:
+            term_reason = "TimeUp"
+        elif mario_dead:
+            term_reason = "Died"
 
         self.last_reward = reward
 
@@ -89,7 +95,7 @@ class SmwEnvironment(gym.Env):
 
         print(f"Reward: {reward}\nPunishment: {punishment}")
 
-        return obs, reward - punishment, mario_dead or beat_level or timesup, False, {}
+        return obs, reward - punishment, mario_dead or beat_level or timesup, False, {"term_reason" : term_reason}
 
     def get_mario_speed(self) -> tuple[np.float32, np.float32]:
         x_vel = np.int8(self.game_wrapper.readu8(X_VEL)) * np.float32(1 / 16)
