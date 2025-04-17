@@ -82,6 +82,8 @@ class SmwEnvironment(gym.Env):
         #punishment += 200 * mario_dead
         punishment += 30 * timesup
 
+
+        term_reason = "None"
         if beat_level:
             term_reason = "Beat"
         elif timesup:

@@ -135,9 +135,9 @@ class SNES9x(WrapperInterface):
             self.loadState("smw.000")
 
         # Start Movie
-        # self.pressButton("m")
-        # time.sleep(0.5)
-        # self.pressButton(Key.enter)
+        self.pressButton("m")
+        time.sleep(0.5)
+        self.pressButton(Key.enter)
 
         self.is_ready = True
 
