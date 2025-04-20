@@ -18,7 +18,7 @@ if "__main__" in __name__:
     #Since the environemnt gets wrapped by sb3
     env = model.get_env()
     obs = env.reset()
-    for episodes in range(0, wanted_episodes + 1):
+    for episodes in range(0, wanted_episodes):
         term = False
         reward_totals.append(0)
         while not term:

@@ -45,7 +45,7 @@ KEYMAP = {
 }
 
 class SNES9x(WrapperInterface):
-    def __init__(self, disable_keys:bool = False):
+    def __init__(self, disable_keys:bool = False, record_movie:bool = False):
         super().__init__()
         self.disable_keys = disable_keys
         self.is_ready = False
@@ -58,6 +58,7 @@ class SNES9x(WrapperInterface):
         self.ram_mutex = threading.Lock()
         self.socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         self.socket.settimeout(100)
+        self.record_movie = record_movie
 
     def send_command(self, command:str):
         self.socket.send(f"{command}\n".encode())
@@ -135,9 +136,10 @@ class SNES9x(WrapperInterface):
             self.loadState("smw.000")
 
         # Start Movie
-        self.pressButton("m")
-        time.sleep(0.5)
-        self.pressButton(Key.enter)
+        if self.record_movie:
+            self.pressButton("m")
+            time.sleep(0.5)
+            self.pressButton(Key.enter)
 
         self.is_ready = True
 
