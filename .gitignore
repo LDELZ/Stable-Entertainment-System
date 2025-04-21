@@ -9,7 +9,6 @@ snes9x
 stderr.txt
 stdout.txt
 *.000
-*.png
 *.smv
 *.exe
 *.smc
