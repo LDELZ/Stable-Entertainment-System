@@ -16,17 +16,29 @@ Stable Entertainment System (SES) is an on-policy agent training model that auto
 - [Demo](#demo)
 - [Description](#description)
 - [Features](#features)
-- [Software Utilized](#software-utilized)
+- [Software](#software)
+- [Compatibility](#compatibility)
 - [Installation](#installation)
 - [Usage](#usage)
 - [Results](#results)
+- [Limitations](#limitations)
 - [References](#references)
 - [Legal Notice](#legal-notice)
 - [License](#license)
 - [Contributors](#contributors)
 
 ## Demo
-<img src="images/demo1.gif" alt="Demo GIF" width="800"/>
+The following video demonstrates a sample of training results using SES with studied metrics.
+<table>
+  <tr>
+    <td>
+      <img src="images/sb3_final.gif" alt="Super Mario World AI Demo" width="320">
+    </td>
+    <td style="padding-left: 20px;">
+      <img src="images/performance_table.png" alt="Agent Performance Summary" width="250">
+    </td>
+  </tr>
+</table>
 
 ## Description
 ### Program Overview and Runtime Behavior
@@ -34,31 +46,23 @@ This program automates installation and configuration of SB3 and SNES9x-rr emula
 
 ### Game-Model Interaction Pipeline
 SNES9x-rr leverages [Lua](https://www.lua.org/manual/5.4/) scripting to enable frame-specific game control within the emulator. [LuaSocket](https://lunarmodules.github.io/luasocket/) interfaces with Python for sending and receiving game data between agents over TCP. A custom Lua script retrieves memory values directly from the game as specified in the "Memory Watch" variable in lua_script.lua. The memory values and screenshot are passed to the SB3 environment. Once the next set of inputs is determined, they are passed back over the TCP LuaSocket connection to be processed by the emulator. The inputs are held during four successive frame advances, when a new screenshot is generated for the next iteration.
-<img src="images/architecture.png" alt="architecture" width="600"/>
+<br><br><img src="images/architecture.png" alt="architecture" width="650"/>
 
 ### Reinforcement Learning with A2C
 The SB3 environment uses the A2C algorithm to determine which inputs to be processed during the next frame. A2C is an on-policy reinforcement learning algorithm that supports real-time learning from the current game state, using the active game frame. It is an actor-critic model that performs an action that a critic evaluates. Successful actions are encouraged and unsuccessful ones are discouraged, forming a policy. A2C was selected for its simulation of human abilities, learning from current gameplay to update the current strategy. Additionally, it works well with discrete action spaces like SNES games and supports entropy to prevent determinism.
 
-The A2C model operates using the following reward function:
+The A2C model operates using the following reward function:<br><br>
 <img src="images/equations.png" alt="equations" width="400"/>
 
 where Vc is the closing velocity between Mario and the goal post, c are reward weights, d is the distance between Mario and the goal post, P are the current positions of Mario and the goal post, V is Mario's current velocity, and R is an additional bonus or penalty for specific actions. A2C maximizes the reward per time (t) to move Mario toward the goal.
 
 ## Features
-- This reinforcement learning program functions with SNES games. SNES game environments are more complex than previous studies, and have broad color ranges, high pixel densities, advanced physics, and diverse gameplay goals. Frames are more information-dense (i.e detailed backgrounds, enemy movement, diverse terrain) but are successfully handled by SES. Features useful to the model are extracted from captured frames.
-- SES utilizes a novel framework. Stable Baselines 3 implements various RL algorithms with strong performance. Algorithms are model-free; no need to worry about underlying architecture. 
-- Improve results in complicated environments:
-Beneficial for externalizing to challenging data-dense environments (i.e. surgery, self-driving cars)
-- SNES Mario makes this project applicable for testing and developing modern 2D platformers
-Greenfield project: novel model previously unstudied in modern 2D platformers
-Uses Sethbling’s performance as a baseline but with a completely distinct approach
-Project requires no prior gameplay data
-Performs actions at a human-achievable rate
-Algorithm choices are not tied to specific model architecture
-Model requires mostly visual inputs
-Uses policies inspired by drone navigation studies
+- This reinforcement learning program functions with SNES games. SNES game environments are more complex than previous studies, have broad color ranges, high pixel densities, advanced physics, and diverse gameplay goals. Frames are more information-dense (i.e detailed backgrounds, enemy movement, diverse terrain), but are successfully handled by SES. Features useful to the model are extracted from captured frames. Training models to control complex agents has broader implications that are beneficial for externalizing to challenging, data-dense environments.
+- SES utilizes a novel framework with SB3, which implements various RL algorithms with strong performance, and is model-free. Therefore there is no need to worry about the underlying architecture. 
+- SNES Mario makes this project applicable for testing and developing modern 2D platformers. Reinforcement learning models capable of controlling modern 2D platformers are scarcely studied, and the use of Mario enables similar studies for many other games of similar complexity.
+- Model training requires no prior gameplay data, and performs actions at a human-achievable rate.
 
-## Software Utilized
+## Software
 
 - [**SNES9X-rr v1.51**](https://github.com/gocha/snes9x-rr)  
   A modified version of the SNES9X emulator that enables recordings and Lua scripting. This serves as the agent.
@@ -72,6 +76,11 @@ Uses policies inspired by drone navigation studies
   Interfaces the emulator and machine learning agents.
   *License: Python Software Foundation License (PSF License)*
 
+## Compatibility
+- Windows Operating Systems 10 and higher
+
+> **Note** that compatibility is limited based on the use of the SNES9x-rr emulator. However, SNES9x-rr was selected for its support of [Bulletproof Recording](https://tasvideos.org/EmulatorResources#EmulatorOverview), [Lua](https://www.lua.org/manual/5.4/) scripting, and [LuaSocket](https://lunarmodules.github.io/luasocket/) . Bulletproof recording is required to concatenate videos that are captured when loading a game state occurs. Lua scripting is required for memory reading and automated input, and LuaSocket is required for interfacing with other programs over TCP. Currently, alternative emulators satisfying these requirements are extremely limited.
+
 ## Installation
 Follow these steps to install and run the project:
 
@@ -81,17 +90,22 @@ Follow these steps to install and run the project:
    ```bash
    git clone https://github.com/LDELZ/Stable-Entertainment-System
    cd Stable-Entertainment-System
+    ```
 
 2. **Install dependencies** from `requirements.txt`:
 
-  ```bash
-  pip install -r requirements.txt
+   ```bash
+    pip install -r requirements.txt
+   ```
 > **Note** that the SB3 environment is highly sensitive to requirement changes. SB3 will automatically install any necessary requirements using the `install_requirements.bat` file after the initial setup.
 
 3. **Run emulator_initialize.py** to automatically download the environments and configure them:
+
+
+    ```bash
+    ./.venv/bin/python emulator_initialize.py
+    ```
 > **Note** that you must follow the prompts if any files are missing. A valid Super Mario World ROM file is required, but is not distributed in any way with this software. Any ROM files must be obtained on the user's own volition. Please read the [Legal Notice](#legal-notice) for more information.
-  '''bash
-  ./.venv/bin/python emulator_initialize.py
 
 ### Creat the initial save state
 4. **Load the snes9x.exe executable** in the snes9x folder of the repository's directory.
@@ -100,43 +114,120 @@ Follow these steps to install and run the project:
 
 6. **Navigate to the desired level** you wish to train the model on within the loaded game environment. The default keyboard mappings to control SNES9x-rr are as follows:
 
-| SNES Button | Keyboard |
-|-------------|----------|
-| Up          | Up       |
-| Left        | Left     |
-| Down        | Down     |
-| Right       | Right    |
-| B           | C        |
-| A           | V        |
-| Y           | X        |
-| X           | D        |
-| R           | S        |
-| Start       | Space    |
-| Select      | Enter    |
-| L           | A        |
+<div align="center">
+
+| SNES Button | Keyboard |   | SNES Button | Keyboard |
+|-------------|----------|---|-------------|----------|
+| Up          | Up       |   | X           | D        |
+| Left        | Left     |   | R           | S        |
+| Down        | Down     |   | Start       | Space    |
+| Right       | Right    |   | Select      | Enter    |
+| B           | C        |   | L           | A        |
+| A           | V        |   | Y           | X        |
+
+</div>
 
 7. **Generate a save state file** using `File > Save Game > Slot #0` in SNES9x-rr.
 > **Note** that a save state is mandatory for the program to function. SB3 reverts to the save state during model training when in-game events that affect the reward function occur. Save states should be captured as close as possible to the beginning of level rendering. State loading is handled automatically, and does not need to be performed manually after creating the first save state.
 
-## Initiate Training
+### Customizing monitored RAM values
+8. **Modify the "Addresses to monitor" block** of the `memory_server.lua' script to track different memory values and pass them to the SB3 environment.
+
+  ```lua
+  -- Addresses to monitor
+  local ram_addresses = {
+      0x7E00D1, -- Mario's X position in the current level (Lower byte)
+      0x7E00D2, -- Mario's X position in the current level (Upper byte)
+      0x7E00D3, -- Mario's Y position in the current level (Lower byte)
+      0x7E00D4, -- Mario's Y position in the current level (Upper byte)
+      0x7E0071, -- Mario animation state flag
+  }
+  ```
+> **Note** that the current implementation will function without updating these values. If users wish to attempt improvements to the reward function that require different RAM conditions, updating this list of addresses will automatically pass the values to the SB3 environment. A complete repository of memory mappings for Super Mario World is available publicly at [SMWCentral](https://www.smwcentral.net/?p=memorymap&game=smw&region=ram).
+
+## Usage
+### Training the Model
+1. **Execute the `Train.py` file** in the project's root directory.
+
+   ```bash
+    python Train.py
+   ```
+>**Note** that once the model is trained, a model checkpoint is saved to the `models/` directory in the project root as a [Python pickle](https://docs.python.org/3/library/pickle.html) binary archive. A model is automatically saved every 1000 steps so performance can be captured for multiple models at different training levels. Model performance will be outputted to the `logdata/` directory in the project's root directory. Log data includes reward value, episode length, policy loss, and entropy loss per step. Log data is formatted as follows:
+
+<div align="center">
+  
+| Wall Time     | Step | Value       |
+|---------------|------|-------------|
+| 1744720333    | 80   | 313.3702393 |
+| 1744720340    | 100  | 313.3702393 |
+| 1744720347    | 120  | 313.3702393 |
+
+</div>
+
+### Testing the Model
+2. **Navigate to a new level** using the same process as Step 6 from the [Installation](#installation) section above.
+3. **Execute the `Enjoy.py` file** in the project's root directory after a model has been trained and appears in `models/`.
+
+   ```bash
+    python Enjoy.py
+   ```
+> **Note** that the model will be automatically loaded for testing. Once complete, performance results will output to the console in the format displayed below.
+
+<div align="center">
+  
+| Metric       | Value        |
+|--------------|--------------|
+| Beat         | 15           |
+| Died         | 30           |
+| Timed Out    | 5            |
+| Win Rate     | 30.00%       |
+| Avg. Reward  | 312.45       |
+
+</div>
+
 ## Results
-The following video demonstrates a sample of training results using SES with studied metrics.
+### Training Results
+
+### Visual Examples
+
 <table>
   <tr>
-    <td>
-      <img src="images/sb3_final.gif" alt="Super Mario World AI Demo" width="320">
-    </td>
-    <td style="padding-left: 20px;">
-      <img src="images/performance_table.png" alt="Agent Performance Summary" width="250">
-    </td>
+    <td><img src="images/reward_plot.png" alt="Image 1" width="600"/></td>
+    <td><img src="images/time_plot.png" alt="Image 2" width="600"/></td>
+  </tr>
+  <tr>
+    <td><img src="images/policy_plot.png" alt="Image 3" width="600"/></td>
+    <td><img src="images/entropy_plot.png" alt="Image 4" width="600"/></td>
   </tr>
 </table>
+
+
+<div align="center">
+  
+| Metric              | A2C       | MarI/O   |
+|---------------------|-----------|----------|
+| Episodes Played     | 51        | 223      |
+| Successes           | 15        | 0        |
+| Deaths              | 36        | 189      |
+| Timeouts            | 0         | 34       |
+| Win Rate            | 29.4%     | 0%       |
+| Avg. Reward         | 341.17    | 98.13    |
+| Max Game Score      | 1000      | 500      |
+| Completion Time (s) | 734       | —        |
+| Step Time (s)       | 0.367     | 0.11     |
+
+<img src="images/bar_plot.png" alt="equations" width="600"/>
+
+</div>
 
 ## Limitations
 - Unrealistic Behaviors: The model can perform inputs with conflicting directions, leading to impossible neural network states than would be achievable on original hardware by human players. Restricting key combinations to valid set of possible inputs may improve model stability.
 - Training Instability: Current training on a custom level results in model decay and overfitting. A set of custom levels is needed to teach the model how to handle diverse obstacles and environments
 - Limited Visual Cues: Screenshots do not provide enough information for all objects to be detected. Additional memory values (e.g., enemy positions) are required for proper model understanding. Possible solutions can include investigations into enemy sprite tracking for better screenshot information retrieval.
 - Efficiency: Screenshot feedback is slow and is the primary limiter for training speed. Python should be integrated directly into the emulator to improve feedback pipeline efficiency.
+
+## Conclusion
+A2C via SB3 is capable of learning appropriate inputs for agent control of complex games from primarily visual data. As demonstrated, most information required for learning can be taken from the in-game screenshots. A2C is superior to MarI/O's genetic model for Super Mario World, with a win rate of 29% compared to 0%, respectively. Additionally, A2C converges faster than MarI/O's neural model and has superior in-game performance. Despite success in custom levels, overfitting and sparsity limit generalization to original levels in Super Mario World. This research demonstrates potential utility in other visually-dense games, which may advance the understanding of automated gameplay in informationally dense games or in broader agent systems.
 
 ## References
 
@@ -161,6 +252,7 @@ You may use, modify, and distribute this software in compliance with the license
 
 ## Contributors
 **Authors**:
+- **Luke Delzer** – Developer - [ldelzer@uccs.edu](mailto:ldelzer@uccs.edu)
 - **Brennan Romero** – Developer – [bromero@uccs.edu](mailto:jbromero@uccs.edu)
-- **Luke Delzer** – [ldelzer@uccs.edu](mailto:ldelzer@uccs.edu)
+
 
