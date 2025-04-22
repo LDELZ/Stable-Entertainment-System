@@ -12,6 +12,7 @@ stdout.txt
 *.smv
 *.exe
 *.smc
+screenshot_test.png
 /flips
 flips
 logdata
