@@ -4,6 +4,11 @@
 
 Stable Entertainment System (SES) is an on-policy agent training model that uses reinforcement learning to automate gameplay for the Super Nintendo Entertainment System (SNES). It uses [Stable Baselines 3 (SB3)](https://github.com/DLR-RM/stable-baselines3) and the [Asynchronous Advantage Actor Critic (A2C)](https://arxiv.org/abs/2205.09123) algorithm to learn how to play SNES games in the [SNES9x-rr](https://github.com/gocha/snes9x-rr/releases) emulator. SES was designed to automate gameplay for Super Mario World but enables extensibility to other SNES games.
 
+This project is open source and is made available on GitHub. The GitHub repository is publicly available at the following link.
+
+  >https://github.com/LDELZ/Stable-Entertainment-System
+
+The project is licensed under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0). You may use, modify, and distribute this software in compliance with the license terms. See the [License](LICENSE) file for more details.
 ## Key Topics
 
 - **Agent Systems**
@@ -29,6 +34,7 @@ Stable Entertainment System (SES) is an on-policy agent training model that uses
 - [Usage](#usage)
   - [Model Training](#model-training)
   - [Model Testing](#model-testing)
+- [Data](#data)
 - [Results](#results)
   - [Training Environment](#training-environment)
   - [Evaluation Metrics](#evaluation-metrics)
@@ -216,6 +222,24 @@ Vc is the closing velocity between Mario and the goal post, c are reward weights
 
 </div>
 
+## Data
+Data was generated from the logs produced from model training. The training data is available in the `training_data\` directory and linked below.
+- [reward_per_step.csv](training_data/reward_per_step.csv)
+  > Tabulates the calculated reward for each training step.
+- [episode_length_per_step.csv](training_data/episode_length_per_step.csv)
+  > Tabulates the episode length at each training step.
+- [policy_loss_per_step.csv](training_data/policy_loss_per_step.csv)
+  > Tabulates the policy loss calculated for each training step.
+- [entropy_loss_per_step.csv](training_data/entropy_loss_per_step.csv)
+  > Tabulates the entropy loss calculated for each training step.
+
+The baseline results for comparison to MarI/O (discussed in [Baseline](#baseline) below) are generated from the video data produced by running that model under the same conditions as the studied model. The video file is large but can be viewed or downloaded from the following link.
+
+  >
+  >https://drive.google.com/file/d/1UBv9ESqcqph6PLqJXG-wV-PHXpJJCUmX/view?usp=drive_link
+  >
+  >[Mirror](https://www.dropbox.com/scl/fi/e8jsttwhj0xvyzjmatebt/marIO_training_muted.mp4?rlkey=phvqm9l4tc4oa7394vy1n5u7n&dl=0)
+
 ## Results
 ### Training Environment
 A custom training level was programmed to challenge the reward function, ensuring that the model learns meaningful gameplay (i.e., it cannot simply hold right to win). This approach reduces overfitting to simplistic movement patterns by introducing multiple paths that encourage dynamic solutions. The level also incorporates interactive elements, such as springs and shells, to support the learning of dynamic behaviors that unexpectedly change Mario's trajectory.
@@ -350,7 +374,7 @@ This project is intended for research and educational purposes only. We **do not
 ## License
 
 This project is licensed under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0).  
-You may use, modify, and distribute this software in compliance with the license terms. See the `LICENSE` file for more details.
+You may use, modify, and distribute this software in compliance with the license terms. See the [License](LICENSE) file for more details.
 
 ## Contributors
 **Authors**:
