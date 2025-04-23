@@ -236,7 +236,7 @@ Data was generated from the logs produced from model training. The training data
 The baseline results for comparison to MarI/O (discussed in [Baseline](#baseline) below) are generated from the video data produced by running that model under the same conditions as the studied model. The video file is large but can be viewed or downloaded from the following link.
 
   >
-  >https://drive.google.com/file/d/1UBv9ESqcqph6PLqJXG-wV-PHXpJJCUmX/view?usp=drive_link
+  >[https://drive.google.com/file/d/1UBv9ESqcqph6PLqJXG-wV-PHXpJJCUmX/view?usp=drive_link](https://drive.google.com/file/d/1WBUhl566_czLIbKA9GBNcV6m_IqS3VSV/view?usp=sharing)
   >
   >[Mirror](https://www.dropbox.com/scl/fi/e8jsttwhj0xvyzjmatebt/marIO_training_muted.mp4?rlkey=phvqm9l4tc4oa7394vy1n5u7n&dl=0)
 
