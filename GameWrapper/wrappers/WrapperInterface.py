@@ -1,6 +1,23 @@
+'''
+******************************************************************************
+ * File:        SNES9x.py
+ * Author:      Brennan Romero, Luke Delzer
+ * Class:       Introduction to AI (CS3820), Spring 2025, Dr. Armin Moin
+ * Assignment:  Semester Project
+ * Due Date:    04-23-2025
+ * Description: This is a standard interface file that specifies the function
+                prototypes that must be satisfied by the WrapperInterface and
+                SNES9x classes.
+ * Usage:       This program is automatically used by the GameWrapper class
+                and is not intended for use on its own.
+ ******************************************************************************
+ '''
+
+# Imports
 import numpy as np
 from GameWrapper.button.Buttons import *
 
+# Constants
 GAME_RESOLUTION = (224,256)
 X_ADDR = 0x7E00D1
 Y_ADDR = 0x7E00D3
@@ -12,6 +29,14 @@ PLAYER_PIECE = 28 # Will be 0 up until level is beat
 PLAYER_DEAD_VAL = 0x09
 PLAYER_HURT_VAL = 0x01
 
+'''
+------------------------------------------------------------------------------
+ * Class: SNES9x
+ * --------------------
+ * Description:
+ *	Represents an instance of a WrapperInterface whose functions must be
+    satisfied. Basic control functions are specified here.
+ '''
 class WrapperInterface():
     def __init__(self):
         self.is_ready = False
