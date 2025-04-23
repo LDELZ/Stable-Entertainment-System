@@ -2,7 +2,7 @@
 
 ## Overview
 
-Stable Entertainment System (SES) is an on-policy agent training model that automates gameplay for the Super Nintendo Entertainment System (SNES). It uses [Stable Baselines 3 (SB3)](https://github.com/DLR-RM/stable-baselines3) and the [Asynchronous Advantage Actor Critic (A2C)](https://arxiv.org/abs/2205.09123) algorithm to learn how to play SNES games in the [SNES9x-rr](https://github.com/gocha/snes9x-rr/releases) emulator. SES was designed to automate gameplay for the game Super Mario World but supports extensibility to other SNES games.
+Stable Entertainment System (SES) is an on-policy agent training model that uses reinforcement learning to automate gameplay for the Super Nintendo Entertainment System (SNES). It uses [Stable Baselines 3 (SB3)](https://github.com/DLR-RM/stable-baselines3) and the [Asynchronous Advantage Actor Critic (A2C)](https://arxiv.org/abs/2205.09123) algorithm to learn how to play SNES games in the [SNES9x-rr](https://github.com/gocha/snes9x-rr/releases) emulator. SES was designed to automate gameplay for the game Super Mario World but supports extensibility to other SNES games.
 
 ## Key Topics
 
@@ -29,16 +29,27 @@ Stable Entertainment System (SES) is an on-policy agent training model that auto
 
 ## Demo
 The following video demonstrates a sample of training results using SES with studied metrics.
-<table>
-  <tr>
-    <td>
-      <img src="images/sb3_final.gif" alt="Super Mario World AI Demo" width="320">
-    </td>
-    <td style="padding-left: 20px;">
-      <img src="images/performance_table.png" alt="Agent Performance Summary" width="250">
-    </td>
-  </tr>
-</table>
+<div style="display: flex; align-items: flex-start; gap: 20px;">
+<div>
+  <img src="images/sb3_final.gif" alt="Bar Chart" width="370"/>
+</div>
+<div>
+
+| Metric              | A2C       |
+|---------------------|-----------|
+| Episodes Played     | 51        |
+| Successes           | 15        |
+| Deaths              | 36        |
+| Timeouts            | 0         |
+| Win Rate            | 29.4%     |
+| Avg. Reward         | 341.17    |
+| Max Game Score      | 1000      |
+| Completion Time (s) | 734       |
+| Step Time (s)       | 0.367     |
+
+</div>
+</div>
+
 
 ## Description
 ### Program Overview and Runtime Behavior
@@ -56,6 +67,8 @@ The A2C model operates using the following reward function:<br><br>
 
 where Vc is the closing velocity between Mario and the goal post, c are reward weights, d is the distance between Mario and the goal post, P are the current positions of Mario and the goal post, V is Mario's current velocity, and R is an additional bonus or penalty for specific actions. A2C maximizes the reward per time (t) to move Mario toward the goal.
 
+Entropy was added to encourage model exploration and reduce determinism. As a result, the model may attempt riskier movements when entropy is high.
+
 ## Features
 - This reinforcement learning program functions with SNES games. SNES game environments are more complex than previous studies, have broad color ranges, high pixel densities, advanced physics, and diverse gameplay goals. Frames are more information-dense (i.e detailed backgrounds, enemy movement, diverse terrain), but are successfully handled by SES. Features useful to the model are extracted from captured frames. Training models to control complex agents has broader implications that are beneficial for externalizing to challenging, data-dense environments.
 - SES utilizes a novel framework with SB3, which implements various RL algorithms with strong performance, and is model-free. Therefore there is no need to worry about the underlying architecture. 
@@ -65,16 +78,20 @@ where Vc is the closing velocity between Mario and the goal post, c are reward w
 ## Software
 
 - [**SNES9X-rr v1.51**](https://github.com/gocha/snes9x-rr)  
-  A modified version of the SNES9X emulator that enables recordings and Lua scripting. This serves as the agent.
+  A modified version of the SNES9X emulator that enables recordings and Lua scripting. This serves as the agent.  
   *License: Freeware for personal use; GPL/LGPL for included components (JMA, snes_ntsc, xBRZ)*
 
 - [**Stable Baselines3 (SB3)**](https://github.com/DLR-RM/stable-baselines3)  
-  A machine learning framework used to implement actor-critic algorithms with strong results.
+  A machine learning framework used to implement actor-critic algorithms with strong results.  
   *License: MIT*
 
 - [**Python**](https://github.com/python/cpython)  
-  Interfaces the emulator and machine learning agents.
+  Interfaces the emulator and machine learning agents.  
   *License: Python Software Foundation License (PSF License)*
+
+- [**MarI/O**](https://gist.github.com/SethBling/598639f8d5e8afb5453a0b9519be51ff)  
+  Uses a neural grid and genetic programming to beat levels in Super Mario World.  
+  *License: “Feel free to use this code, but please do not redistribute it.”*
 
 ## Compatibility
 - Windows Operating Systems 10 and higher
@@ -107,7 +124,7 @@ Follow these steps to install and run the project:
     ```
 > **Note** that you must follow the prompts if any files are missing. A valid Super Mario World ROM file is required, but is not distributed in any way with this software. Any ROM files must be obtained on the user's own volition. Please read the [Legal Notice](#legal-notice) for more information.
 
-### Creat the initial save state
+### Create the initial save state
 4. **Load the snes9x.exe executable** in the snes9x folder of the repository's directory.
 
 5. **Load the smw.sfc ROM** using `File > Open ROM...` and selecting the ROM file.
@@ -186,23 +203,65 @@ Follow these steps to install and run the project:
 </div>
 
 ## Results
-### Training Results
+### Training Environment
+A custom training level was programmed to challenge the reward function, ensuring that the model learns meaningful gameplay (i.e., it cannot simply hold right to win). This approach reduces overfitting to simplistic movement patterns by introducing multiple paths that encourage dynamic solutions. The level also incorporates interactive elements, such as springs and shells, to support the learning of dynamic behaviors.
+<div align="center">
+<img src="images/level.png" alt="architecture" width="650"/>
+</div>
 
-### Visual Examples
+### Evaluation Metrics
+In-game model performance was measured using the following metrics: Episodes Played, Successes, Deaths, Timeouts, Win Rate, Average Reward, Maximum Game Score, Completion Time (seconds), Step Time (seconds). These metrics encompass a comprehensive array of in-game performance values, as well as model-training and computational performance data. The A2C algorithm-based model will be compared to [SethBling's](https://gist.github.com/SethBling/598639f8d5e8afb5453a0b9519be51ff) baseline for each of these metrics. Model training performance was measured using the average reward, average episode length, policy loss, and entropy loss per step.
+
+### Baseline
+A neural network-based AI agent called “MarI/O” was developed by [SethBling (2015)](https://gist.github.com/SethBling/598639f8d5e8afb5453a0b9519be51ff) using genetic algorithms to play Super Mario World. The system creates a small, discrete spatial grid based on in-game sprites. Neurons are connected to cells in the grid, which are connected to other neurons or controller outputs. The network evolves over time using principles from natural selection to gradually develop the ability to play the game. However, due to the fixed nature of the sprite-grid mapping, the trained network has difficulty adapting to new levels. SethBling's model was implemented on the custom level to generate baseline performance results.
+<div align="center">
+<img src="images/sb.gif" alt="sb" width="350"/>
+</div>
+
+### Training Results
+The average reward (left) and episode length (right) per step are displayed in the plots below. 
 
 <table>
   <tr>
     <td><img src="images/reward_plot.png" alt="Image 1" width="600"/></td>
     <td><img src="images/time_plot.png" alt="Image 2" width="600"/></td>
   </tr>
+</table>
+
+During the initial steps, there is a wide variance in reward per step due to the model gaining initial understandings of how to improve reward and interact with level obstacles. The model has no understanding of the environment at the beginning, making policy behaviors random. Some of these random initial actions are good, while others are poor. The reward stabilizes as the model attempts to exploit potentially useful rewards. At approximately 2000 steps, the model achieves a local optimum. Here, a balance of reward exploitation and exploration is achieved, leading to a reasonable understanding of how to progress without taking overly-risky exploits. This trend is observed between both the average reward and episode length per step, and these concepts are closely linked. Since the episode length is the amount of time that Mario stays alive, the balance that achieves the optimal reward will lead to a corresponding greater success in goal progression. At this point, the model has learned more consistent behaviors, has seen more of the level, has converged on a pattern, and can generalize to other obstacles.
+
+Reward function parameters were manually modified to produce a positive trend in reward with increased learning. The optimal model producxed from these values was saved for testing and comparison. The parameters used to produce the optimal model are displayed belolw.
+
+<div align="center">
+
+| Parameter             | Value  | Description                    |
+|-----------------------|--------|--------------------------------|
+| `C1`                  | 1.8    | Weight for closing velocity 1  |
+| `C2`                  | 1.1    | Weight for closing velocity 2  |
+| Finish Level Reward   | 30     | Reward for completing level    |
+| Death Penalty         | 40     | Punishment for dying           |
+
+</div>
+
+In both scenarios, the model begins to decay after 2000 and 3000 steps. This is potentially due to poor trends being propogated by the current understanding of the on-policy model, or due to overfitting to short-term rewards in the simplified level. Plotting the policy loss below (left) confirms this trend, where the smallest policy loss is exhibited at approximately 2500 steps, when becomes unstable shortly after. Large variances in loss magnitude are observable from the decayed model. 
+
+The entropy loss per training step is plotted below (right). As discussed in the algorithm [Description](#description), entropy was added to encourage model exploration and reduce determinism. As a result, the model may attempt riskier movements when entropy is high. This is used to encourage exploration or make increasingly aggressive maneuvers to overcome inabilities to progress. The plot demonstrates that entropy increases gradually with time, making Mario's behaviors less stable with increased training. This could be due to overfitting to a certain set of behaviors that maximize short-term rewards, but fail to achieve long-term goals like completing the level. It could also be the result of poor performance being propagated by the model such that increasingly erratic behaviors are used to overcome the decline. Future evaluation of entropy and model decay will be conducted.
+
+<table>
   <tr>
     <td><img src="images/policy_plot.png" alt="Image 3" width="600"/></td>
     <td><img src="images/entropy_plot.png" alt="Image 4" width="600"/></td>
   </tr>
 </table>
 
+### Comparison to Baseline
+The optimal model at 2000 training steps was preserved for comparison to the baseline. The game and computational performance metrics for the A2C-based model and [SethBling's](https://gist.github.com/SethBling/598639f8d5e8afb5453a0b9519be51ff) MarI/O are tabulated below. A paired bar chart of normalized metric values is provided for simpler comparison. All results were generated within a fixed 12 minute timeframe to limit computational burden.
 
-<div align="center">
+<div style="display: flex; align-items: flex-start; gap: 20px;">
+
+<div>
+
+<!-- Your original table preserved -->
   
 | Metric              | A2C       | MarI/O   |
 |---------------------|-----------|----------|
@@ -216,15 +275,21 @@ Follow these steps to install and run the project:
 | Completion Time (s) | 734       | —        |
 | Step Time (s)       | 0.367     | 0.11     |
 
-<img src="images/bar_plot.png" alt="equations" width="600"/>
+</div>
+
+<div>
+  <img src="images/bar_plot.png" alt="Bar Chart" width="560"/>
+</div>
 
 </div>
 
+A2C demonstrates superiority over MarI/O, with a higher success rate, fewer deaths, fewer timeouts, and a better average reward. A2C does demonstrate a slower average step time compared to MarI/O, however it achieves faster overall convergence and level completion, therefore demonstrating that the simplified grid computations in MarI/O are faster to compute, but provide less learning abilities that A2C. Several factors may contribute to the superior performance of A2C versus MarI/O. Better pixel mapping is possible with A2C, which interprets information from an entire screenshot image, compared to MarI/O's simplified grid mapping. This potentially leads to better information retrieval for improved model training. A2C may converge faster because it saves model improvements after each batch. The model-free, on-policy nature of A2C allows for more frequent and responsive model updates. Compared to MarI/O's genetic algorithm, numerous episodes to determine the best-performing population are required before advancing to the next generation, leading to drastically longer processing times.
+
+## Testing Progress
+Testing the trained models on original game levels has proved challenging due to differences in training and testing level properties. Original levels are too sparse, leading to impaired model learning with inconsistent initial feedback. Increasing the diversity of the training environment could potentially improve the feedback network to enable better learning. The reward function may need to be further modified to account for initial level sparsity. Additionally, research into entropy and reward behaviors may allow an inversion of entropy changes per step. Ideally, high entropy would occur at the beginning of training and decrease after the model converges on a solution for completing the level. This approach would encourage early exploration and aid in handling initial environment uncertainty.
+
 ## Limitations
-- Unrealistic Behaviors: The model can perform inputs with conflicting directions, leading to impossible neural network states than would be achievable on original hardware by human players. Restricting key combinations to valid set of possible inputs may improve model stability.
-- Training Instability: Current training on a custom level results in model decay and overfitting. A set of custom levels is needed to teach the model how to handle diverse obstacles and environments
-- Limited Visual Cues: Screenshots do not provide enough information for all objects to be detected. Additional memory values (e.g., enemy positions) are required for proper model understanding. Possible solutions can include investigations into enemy sprite tracking for better screenshot information retrieval.
-- Efficiency: Screenshot feedback is slow and is the primary limiter for training speed. Python should be integrated directly into the emulator to improve feedback pipeline efficiency.
+Unrealistic behaviors are possible. The model can perform inputs with conflicting directions, leading to impossible neural network states than would be achievable on original hardware by human players. Restricting key combinations to valid set of possible inputs may improve model stability. Training demonstrates model instability. Current training on the custom level results in model decay and overfitting. A set of custom levels is needed to teach the model how to handle diverse obstacles and environments. Limitions to visual cues in still screenshots exist. Screenshots do not provide enough information for all objects to be detected. Additional memory values (e.g., enemy positions) are required for proper model understanding. Possible solutions can include investigations into enemy sprite tracking for better screenshot information retrieval Model training is generally inefficient. Screenshot feedback is slow and is the primary limiter for training speed. Python should be integrated directly into the emulator to improve feedback pipeline efficiency.
 
 ## Conclusion
 A2C via SB3 is capable of learning appropriate inputs for agent control of complex games from primarily visual data. As demonstrated, most information required for learning can be taken from the in-game screenshots. A2C is superior to MarI/O's genetic model for Super Mario World, with a win rate of 29% compared to 0%, respectively. Additionally, A2C converges faster than MarI/O's neural model and has superior in-game performance. Despite success in custom levels, overfitting and sparsity limit generalization to original levels in Super Mario World. This research demonstrates potential utility in other visually-dense games, which may advance the understanding of automated gameplay in informationally dense games or in broader agent systems.
@@ -232,14 +297,23 @@ A2C via SB3 is capable of learning appropriate inputs for agent control of compl
 ## References
 
 - [Quadcopter Guidance Law Design using Deep Reinforcement Learning (Aydinli & Kutay, 2023)](https://doi.org/10.1109/RAST57548.2023.10197848)
+  >Aydinli, Sevket Utku, and Ali Turker Kutay. Quadcopter Guidance Law Design using Deep Reinforcement Learning. 2023. IEEE, https://doi.org/10.1109/RAST57548.2023.10197848.
 - [Deep Reinforcement Learning in Computer Vision: A Comprehensive Survey (Le et al., 2021)](https://arxiv.org/abs/2108.11510)
+  >Le, Ngan, et al. Deep Reinforcement Learning in Computer Vision: A Comprehensive Survey. 2021. arXiv, https://arxiv.org/abs/2108.11510.
 - [Playing Atari with Deep Reinforcement Learning (Mnih et al., 2013)](https://arxiv.org/abs/1312.5602)
+  >Mnih, Volodymyr, et al. Playing Atari with Deep Reinforcement Learning. DeepMind Technologies, 2013. arXiv, https://arxiv.org/abs/1312.5602.
 - [Soft Actor-Critic: Off-Policy Maximum Entropy Deep Reinforcement Learning (Haarnoja et al., 2018)](https://arxiv.org/abs/1801.01290)
+  >Haarnoja, Tuomas, et al. "Soft Actor-Critic: Off-Policy Maximum Entropy Deep Reinforcement Learning with a Stochastic Actor." arXiv preprint, 2018, arxiv.org/abs/1801.01290.
 - [A2C Is a Special Case of PPO (Huang et al., 2022)](https://arxiv.org/abs/2205.09123)
+  >Huang, Shengyi, et al. "A2C Is a Special Case of PPO." arXiv preprint, 2022, arxiv.org/abs/2205.09123.
 - [Stable-Baselines3: Reliable Reinforcement Learning Implementations (Raffin et al., 2021)](https://www.jmlr.org/papers/v22/20-1364.html)
+  >Raffin, Antonin, et al. "Stable-Baselines3: Reliable Reinforcement Learning Implementations." Journal of Machine Learning Research, vol. 22, no. 268, 2021, pp. 1–8, jmlr.org/papers/v22/20-1364.html.
 - [MarI/O - Machine Learning for Video Games (SethBling, 2015)](https://www.youtube.com/watch?v=qv6UVOQ0F44)
+  >SethBling, MarI/O - Machine Learning for Video Games., 2015. https://www.youtube.com/watch?v=qv6UVOQ0F44.
 - [Proximal Policy Optimization Algorithms (Schulman et al., 2017)](https://arxiv.org/abs/1707.06347)
+  >Schulman, John, et al. "Proximal Policy Optimization Algorithms." arXiv preprint, 2017, arxiv.org/abs/1707.06347.
 - [AI for Classic Video Games using Reinforcement Learning (Sodhi, 2017)](https://scholarworks.sjsu.edu/etd_projects/538)
+  >Sodhi, Shivika. AI for Classic Video Games using Reinforcement Learning. Master's project, San José State University, 2017. San José State University ScholarWorks, https://scholarworks.sjsu.edu/etd_projects/538.
 
 ## Legal Notice
 
