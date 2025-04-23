@@ -10,7 +10,7 @@
                 uses the Stable Baselines 3 (SB3) library to run the model
                 and controls the emulator agent through the wrapper.
                 Statistics are automatically computed and displayed.
- * Usage:       Run this program in a Python 3.11.x or higher environment.
+ * Usage:       Run this program in a Python 3.12.x or higher environment.
                 A valid model must be present in the models/ directory in
                 order for model testing to function.
  ******************************************************************************

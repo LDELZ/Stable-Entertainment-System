@@ -10,7 +10,7 @@
                 from SB3. It installs all required dependencies and prompts the
                 user to add the required ROM file manually. All dependencies
                 must be installed for full functionality.
- * Usage:       Run this program in a Python 3.11.x or higher environment.
+ * Usage:       Run this program in a Python 3.12.x or higher environment.
                 This program must be executed before attempting to train a
                 model.
  ******************************************************************************
