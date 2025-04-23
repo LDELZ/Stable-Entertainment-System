@@ -99,8 +99,6 @@ Vc is the closing velocity between Mario and the goal post, c are reward weights
 - SNES Mario makes this project applicable for testing and developing modern 2D platformers. Reinforcement learning models capable of controlling modern 2D platformers are scarcely studied, and the use of Mario enables similar studies for many other games of similar complexity.
 - Model training requires no prior gameplay data, and performs actions at a human-achievable rate.
 
-
-
 ## Installation
 ### Software
 
@@ -241,6 +239,8 @@ The baseline results for comparison to MarI/O (discussed in [Baseline](#baseline
   >
   >[Mirror](https://www.dropbox.com/scl/fi/e8jsttwhj0xvyzjmatebt/marIO_training_muted.mp4?rlkey=phvqm9l4tc4oa7394vy1n5u7n&dl=0)
 
+  >**Warning:** While this data is presented in good faith, its reproduction is volatile. The numpy seed used to collect the presented data was not saved, leading to nondeterminism when       producing results. Moreover, it was discovered that display resolution and graphics drivers introduce vairability in how the model behaves. The purpose of this project is to demonstrate the potential for performance benefits of the A2C model, however reproduction of this precise data is not guaranteed. Additionally, the ROM game file must be obtained on an individual basis by     legitimate means only. No ROM files are provided here for legal reasons as discussed in the [Legal Notice](legal-notice). While this program is fully open source, obtainment of the game file must     be supplied individually.
+
 ## Results
 ### Training Environment
 A custom training level was programmed to challenge the reward function, ensuring that the model learns meaningful gameplay (i.e., it cannot simply hold right to win). This approach reduces overfitting to simplistic movement patterns by introducing multiple paths that encourage dynamic solutions. The level also incorporates interactive elements, such as springs and shells, to support the learning of dynamic behaviors that unexpectedly change Mario's trajectory.
@@ -370,7 +370,7 @@ A2C via SB3 is capable of learning appropriate inputs for agent control of compl
 
 ## Legal Notice
 
-This project is intended for research and educational purposes only. We **do not condone or support software piracy** of any kind. Any references to Super Mario World or other game ROMs are made strictly in the context of technical compatibility and emulator integration for reinforcement learning research. SES requires a legitimately-obtained ROM file for Super Mario World, or any other game you wish to automate. No ROM files are provided, and any ROM must be obtained on the user's own volition. It is your responsibility to ensure that you comply with all applicable local, national, and international copyright laws when obtaining ROM files for automation. This project **does not provide or distribute any copyrighted ROM files**, and we **stand strongly against piracy** in any form.
+This project is intended for research and educational purposes only. We **do not condone or support software piracy** of any kind. Any references to Super Mario World or other game ROMs are made strictly in the context of technical compatibility and emulator integration for reinforcement learning research. SES requires a legitimately-obtained ROM file for Super Mario World, or any other game you wish to automate. No ROM files are provided, and any ROM must be obtained on the user's own volition. It is your responsibility to ensure that you comply with all applicable local, national, and international copyright laws when obtaining ROM files for automation. This project **does not provide or distribute any copyrighted ROM files**, and we **stand strongly against piracy** in any form. **Do not commit ROM files to forks of this repository.**
 
 ## License
 
