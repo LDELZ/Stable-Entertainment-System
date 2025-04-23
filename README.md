@@ -129,12 +129,12 @@ Vc is the closing velocity between Mario and the goal post, c are reward weights
    cd Stable-Entertainment-System
     ```
 
-2. **Install dependencies** from `requirements.txt`:
+2. **Install dependencies**:
 
    ```bash
-    pip install -r requirements.txt
+    install_requirements.bat
    ```
-    > **Note** that the SB3 environment is highly sensitive to requirement changes. SB3 will automatically install any necessary requirements using the `install_requirements.bat` file after the initial setup.
+    > **Note** This batch file is set up to install PyTorch with CUDA capabilities. CUDA or other types of hardware acceleration are recommended.
 
 3. **Run emulator_initialize.py** to automatically download the environments and configure them:
 
@@ -203,7 +203,8 @@ Vc is the closing velocity between Mario and the goal post, c are reward weights
 
 ### Model Testing
 2. **Navigate to a new level** using the same process as Step 6 from the [Installation](#installation) section above.
-3. **Execute the `Enjoy.py` file** in the project's root directory after a model has been trained and appears in `models/`.
+3. Modify line 42 of `Enjoy.py` to point to the trained model checkpoint. 
+4. **Execute the `Enjoy.py` file** in the project's root directory after a model has been trained and appears in `models/`.
 
    ```bash
     python Enjoy.py
